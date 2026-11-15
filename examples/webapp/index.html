@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MIPS ERP — student portal</title>
+<style>
+:root{--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f6f8fb;--accent:#1d4ed8;--good:#047857;--bad:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:60px}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px}
+.hero{background:linear-gradient(135deg,#0f2c5c,#15496f 55%,#0e7490);color:#fff;border-radius:14px;padding:18px 20px}
+.hero h1{margin:0 0 3px;font-size:20px;letter-spacing:-.02em}
+.hero p{margin:0;opacity:.9;font-size:12.5px}
+.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px;margin:13px 0}
+.card h2{margin:0 0 12px;font-size:14px;display:flex;align-items:center;gap:8px}
+.card h2 .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
+input,select,button{font:inherit;font-size:14px;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);width:100%}
+input:focus{outline:2px solid #bfdbfe;border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;cursor:pointer}
+button.ghost{background:#fff;color:var(--accent)}
+button:disabled{opacity:.55;cursor:default}
+.field{margin-bottom:13px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+.tile .k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.tile .v{font-size:19px;font-weight:700;margin-top:3px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 24px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+.kv:last-child{border-bottom:0}.kv .k{color:var(--muted)}.kv .v{font-weight:600;text-align:right}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:#f8fafc;font-weight:700}
+.bar{height:6px;background:#eef2f7;border-radius:99px;overflow:hidden;margin-top:4px}
+.bar>i{display:block;height:100%;border-radius:99px}
+.chip{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px}
+.chip.g{background:#dcfce7;color:#166534}.chip.w{background:#fef3c7;color:#92400e}.chip.b{background:#fee2e2;color:#991b1b}
+.notice{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.notice .d{width:82px;flex:0 0 82px;color:var(--muted);font-size:11px}
+.notice .c{font-size:10px;font-weight:700;color:#0e7490;text-transform:uppercase}
+.msg{padding:11px 13px;border-radius:10px;font-size:13px;margin-bottom:13px;display:none;line-height:1.5}
+.msg.show{display:block}
+.msg.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.msg.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.msg.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.msg.warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.msg b{font-weight:700}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.muted{color:var(--muted);font-size:12px}
+#captchaBox{display:none;margin-top:14px;padding:14px;border:1px dashed var(--line);border-radius:11px;background:#fbfdff}
+#captchaImg{border:1px solid var(--line);border-radius:6px;background:#fff}
+.hidden{display:none!important}
+.small-input{width:130px!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>MIPS student portal</h1>
+    <p>Sign in with your own college credentials — you only ever see your own data.</p>
+  </div>
+
+  <!-- ============================ LOGIN ============================ -->
+  <div id="loginCard" class="card">
+    <h2><span class="dot"></span>Sign in</h2>
+    <div id="loginMsg" class="msg"></div>
+
+    <div class="field">
+      <label for="userId">User ID / Registration code</label>
+      <input id="userId" placeholder="e.g. 2026BT0683" autocomplete="username" autocapitalize="characters">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Your ERPMIS password" autocomplete="current-password">
+    </div>
+
+    <div class="row" style="margin-bottom:12px">
+      <button id="btnLogin" style="flex:1;min-width:150px">Log in</button>
+      <button id="btnCaptcha" class="ghost" style="flex:0 0 auto">Use captcha instead</button>
+    </div>
+
+    <div id="captchaBox">
+      <div class="muted" style="margin-bottom:7px">Type the 6 characters in the image:</div>
+      <div class="row">
+        <img id="captchaImg" alt="captcha" width="150" height="40">
+        <input id="captchaAnswer" class="small-input" placeholder="e.g. e34780" maxlength="6" autocomplete="off">
+        <button id="btnCaptchaSubmit" style="width:auto">Verify &amp; log in</button>
+      </div>
+    </div>
+
+    <p class="muted" style="margin:14px 0 0">
+      No data is stored on the server. Your password is used only to open a session,
+      and expires automatically after ~20 minutes.
+      <a href="#" id="btnDemo">View a sample dashboard without signing in →</a>
+    </p>
+  </div>
+
+  <!-- ============================ DASHBOARD ============================ -->
+  <div id="app" class="hidden">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:700" id="whoName">—</div>
+        <div class="muted" id="whoMeta">—</div>
+      </div>
+      <button id="btnLogout" class="ghost" style="width:auto">Log out</button>
+    </div>
+
+    <div id="appMsg" class="msg"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="card"><h2><span class="dot"></span>Student</h2><div class="grid2" id="profile"></div></div>
+    <div class="card">
+      <h2><span class="dot"></span>Attendance &amp; marks</h2>
+      <table><thead><tr><th>Subject</th><th>Code</th><th style="width:32%">Attendance</th><th>Mid-sem</th></tr></thead><tbody id="attendance"></tbody></table>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>Timetable <span class="muted" style="font-weight:400" id="ttAsOf"></span></h2>
+      <div style="overflow-x:auto"><table><thead id="ttHead"></thead><tbody id="ttBody"></tbody></table></div>
+    </div>
+    <div class="card"><h2><span class="dot"></span>Recent notices</h2><div id="notices"></div></div>
+  </div>
+</div>
+
+<script src="mips-erp.js"></script>
+<script>
+var API_BASE = window.MIPS_ERP_BASE || (location.protocol === 'file:' ? 'http://localhost:3000' : location.origin);
+var client = new MipsErp({ baseUrl: API_BASE, mode: 'proxy' });
+var $ = function (id) { return document.getElementById(id); };
+
+function esc(s) { return String(s == null ? '—' : s).replace(/[&<>"]/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+function pct(v) { var n = parseFloat(v); return isNaN(n) ? 0 : Math.min(100, n); }
+function chipClass(n) { return n >= 85 ? 'g' : n >= 75 ? 'w' : 'b'; }
+function pctColor(n) { return n >= 85 ? '#16a34a' : n >= 75 ? '#f59e0b' : '#dc2626'; }
+
+function msg(el, text, kind) {
+  var e = $(el);
+  e.className = 'msg ' + (kind || 'info') + (text ? ' show' : '');
+  e.innerHTML = text || '';
+}
+
+/* ------------------------------------------------------------ render */
+function render(d) {
+  $('loginCard').classList.add('hidden');
+  $('app').classList.remove('hidden');
+
+  var p = d.profile || {}, att = d.attendance || {}, overall = att.overall || {};
+  var notices = (d.notices && d.notices.notices) || [];
+  var subs = d.subjects || [];
+
+  $('whoName').textContent = p.fullName || '—';
+  $('whoMeta').textContent = [p.program, p.branch, p.semester && ('Sem ' + p.semester), p.section, p.registrationCode]
+    .filter(Boolean).join(' · ');
+
+  $('tiles').innerHTML = [
+    ['Attendance', overall.percent != null ? overall.percent + '%' : '—', overall.source || ''],
+    ['Subjects', subs.length || (att.bySubject || []).length, 'registered'],
+    ['Notices', (d.notices && d.notices.count) || notices.length, 'on portal'],
+    ['Class days', (d.timetable && d.timetable.days || []).length, 'in timetable'],
+  ].map(function (t) {
+    return '<div class="tile"><div class="k">' + esc(t[0]) + '</div><div class="v">' + esc(t[1]) +
+      '</div><div class="muted" style="font-size:11px">' + esc(t[2]) + '</div></div>';
+  }).join('');
+
+  $('profile').innerHTML = [['Full name', p.fullName], ['Registration code', p.registrationCode],
+    ['Program', p.program], ['Branch', p.branch], ['Semester', p.semester], ['Section', p.section]]
+    .map(function (r) { return '<div class="kv"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + '</span></div>'; }).join('');
+
+  var marks = {};
+  ((d.assessment && d.assessment.subjects) || []).forEach(function (s) { marks[s.code] = s; });
+  var rows = (att.bySubject || []).map(function (s) {
+    var n = pct(s.percent);
+    return '<tr><td>' + esc(s.name) + '</td><td class="muted">' + esc(s.code) + '</td>' +
+      '<td><span class="chip ' + chipClass(n) + '">' + esc(s.percent) + '%</span>' +
+      '<div class="bar"><i style="width:' + n + '%;background:' + pctColor(n) + '"></i></div></td>' +
+      '<td class="muted">' + esc((marks[s.code] || {}).midSemMarks) + '</td></tr>';
+  });
+  $('attendance').innerHTML = rows.join('') || '<tr><td colspan="4" class="muted">No attendance data yet</td></tr>';
+
+  var tt = d.timetable || {};
+  $('ttAsOf').textContent = tt.asOf ? '(as of ' + tt.asOf + ')' : '';
+  $('ttHead').innerHTML = '<tr><th>Day</th>' + (tt.slots || []).map(function (s) { return '<th>' + esc(s) + '</th>'; }).join('') + '</tr>';
+  $('ttBody').innerHTML = (tt.days || []).map(function (day) {
+    return '<tr><td style="font-weight:700;white-space:nowrap">' + esc(day.day) + '</td>' +
+      (day.periods || []).map(function (x) {
+        if (!x) return '<td class="muted">—</td>';
+        if (x.type === 'LUNCH') return '<td class="muted" style="background:#fcfcfd">LUNCH</td>';
+        return '<td><b style="font-size:11.5px">' + esc(x.subject) + '</b><br><span class="muted" style="font-size:10.5px">' + esc(x.code) +
+          '</span><br><span class="muted" style="font-size:10.5px">' + esc(x.teacher) + '</span></td>';
+      }).join('') + '</tr>';
+  }).join('') || '<tr><td class="muted">No timetable published</td></tr>';
+
+  $('notices').innerHTML = notices.slice(0, 6).map(function (n) {
+    return '<div class="notice"><div class="d">' + esc(n.date) + '</div><div><div class="c">' + esc(n.category) + '</div>' + esc(n.title) + '</div></div>';
+  }).join('') || '<div class="muted">No notices</div>';
+}
+
+/* ------------------------------------------------------------ login */
+function busy(on, label) {
+  var b = $('btnLogin');
+  b.disabled = on;
+  b.innerHTML = on ? '<span class="spinner"></span>' + (label || 'Signing in…') : 'Log in';
+}
+
+async function doLogin() {
+  var userId = $('userId').value.trim();
+  var password = $('password').value;
+  if (!userId || !password) return msg('loginMsg', 'Please enter both your user ID and password.', 'err');
+
+  busy(true);
+  msg('loginMsg', '<b>Signing in…</b><br>The college ERP sometimes needs a few captcha attempts, so this can take up to 10 seconds.', 'info');
+  try {
+    var session = await client.proxyLogin(userId, password);
+    msg('loginMsg', 'Signed in. Loading your data…', 'ok');
+
+    var profile = await client.profile();
+    var attendance = await client.attendance();
+    var timetable = await client.timetable();
+    var notices = await client.notices({ limit: 12 });
+    var assessment = null;
+    try { assessment = await client.assessment(); } catch (e) { /* marks optional */ }
+
+    render({ profile: profile, attendance: attendance, timetable: timetable, notices: notices, assessment: assessment, subjects: [] });
+    msg('appMsg', '');
+  } catch (e) {
+    if (e.code === 'SESSION_EXPIRED' || e.code === 'NO_SESSION') {
+      return msg('loginMsg', 'Your session expired. Please sign in again.', 'warn');
+    }
+    var html = '<b>Could not sign in</b><br>' + esc(e.message);
+    var notice = e.body && e.body.error && e.body.error.notice;
+    if (notice) html += '<br><br>' + esc(notice);
+    msg('loginMsg', html, 'err');
+  } finally {
+    busy(false);
+  }
+}
+
+/* ------------------------------------------------------------ manual captcha */
+async function startCaptcha() {
+  var userId = $('userId').value.trim(), password = $('password').value;
+  if (!userId || !password) return msg('loginMsg', 'Enter your user ID and password first.', 'err');
+  msg('loginMsg', 'Loading a captcha…', 'info');
+  try {
+    var res = await fetch(API_BASE + '/api/erp/captcha', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    var d = await res.json();
+    var data = d.data || d;
+    $('captchaImg').src = data.captchaImage;
+    $('captchaImg').dataset.sessionId = data.sessionId;
+    $('captchaBox').style.display = 'block';
+    msg('loginMsg', 'Type the characters you see in the image, then verify.', 'info');
+  } catch (e) {
+    msg('loginMsg', 'Could not load a captcha: ' + esc(e.message), 'err');
+  }
+}
+
+async function submitCaptcha() {
+  var userId = $('userId').value.trim(), password = $('password').value;
+  var sessionId = $('captchaImg').dataset.sessionId;
+  var answer = $('captchaAnswer').value.trim();
+  msg('loginMsg', 'Verifying…', 'info');
+  try {
+    var res = await fetch(API_BASE + '/api/erp/login-captcha', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: sessionId, userId: userId, password: password, captcha: answer }),
+    });
+    var body = await res.json();
+    if (!res.ok) {
+      if (body.data && body.data.captchaImage) {
+        $('captchaImg').src = body.data.captchaImage;
+        $('captchaImg').dataset.sessionId = body.data.sessionId || sessionId;
+        $('captchaAnswer').value = '';
+        return msg('loginMsg', 'That captcha was wrong — a new one has been loaded. Try again.', 'err');
+      }
+      throw Object.assign(new Error(body.error ? body.error.message : 'Login failed'), { code: body.error && body.error.code });
+    }
+    client.token = body.token;
+    var profile = await client.profile();
+    var attendance = await client.attendance();
+    var timetable = await client.timetable();
+    var notices = await client.notices({ limit: 12 });
+    render({ profile: profile, attendance: attendance, timetable: timetable, notices: notices, assessment: null, subjects: [] });
+  } catch (e) {
+    var n = e.body && e.body.error && e.body.error.notice;
+    msg('loginMsg', '<b>Could not sign in</b><br>' + esc(e.message) + (n ? '<br><br>' + esc(n) : ''), 'err');
+  }
+}
+
+/* ------------------------------------------------------------ demo */
+async function loadDemo() {
+  msg('loginMsg', 'Loading the sample dashboard…', 'info');
+  try {
+    var data = await (await fetch('demo-data.json')).json();
+    render(data);
+    msg('appMsg', 'This is <b>sample data</b>, not a real account. Sign out and log in with your own credentials to see yours.', 'warn');
+  } catch (e) {
+    msg('loginMsg', 'Could not load the sample: ' + esc(e.message), 'err');
+  }
+}
+
+/* ------------------------------------------------------------ wiring */
+$('btnLogin').onclick = doLogin;
+$('password').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+$('userId').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('password').focus(); });
+$('btnCaptcha').onclick = startCaptcha;
+$('btnCaptchaSubmit').onclick = submitCaptcha;
+$('btnDemo').onclick = function (e) { e.preventDefault(); loadDemo(); };
+$('btnLogout').onclick = async function () {
+  await client.logout();
+  client.token = null;
+  $('app').classList.add('hidden');
+  $('loginCard').classList.remove('hidden');
+  $('password').value = '';
+  $('captchaBox').style.display = 'none';
+  msg('loginMsg', 'You have been signed out.', 'ok');
+};
+</script>
+</body>
+</html>

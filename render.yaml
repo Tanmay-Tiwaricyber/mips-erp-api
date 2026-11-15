@@ -1,0 +1,26 @@
+# Render blueprint — the best free option for this API in 2026.
+#   Free tier: 750 instance-hours/month, 512 MB RAM, no credit card.
+#   Trade-off: sleeps after 15 min idle, ~1 min cold start.
+services:
+  - type: web
+    name: mips-erp-api
+    runtime: docker
+    plan: free
+    region: singapore        # closest free region to Kanpur
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_OCR
+        value: "true"        # set "false" to save memory if you see OOM restarts
+      - key: OCR_RETRIES
+        value: "15"
+      - key: SESSION_TTL_MS
+        value: "1500000"
+      - key: MAX_SESSIONS
+        value: "50"          # 512 MB box — keep this modest
+      - key: RATE_LIMIT
+        value: "120"
+      - key: CORS_ORIGIN
+        value: "*"           # tighten to your webapp origin once it's live

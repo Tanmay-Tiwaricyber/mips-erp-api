@@ -1,0 +1,25 @@
+{
+  "name": "mips-erp-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "REST API wrapper over the MPGI/MIPS Asteroid365 student portal (erp.mpgi.net)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "smoke": "node examples/smoke.mjs",
+    "test:peruser": "node examples/test-peruser.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "express": "^4.19.2"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.33.5",
+    "tesseract.js": "^5.1.1"
+  }
+}

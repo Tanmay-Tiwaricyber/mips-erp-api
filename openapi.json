@@ -1,0 +1,532 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "mips-erp-api",
+    "version": "1.0.0",
+    "description": "REST wrapper over the MPGI / MIPS Asteroid365 student portal (erp.mpgi.net). Generated from a live reverse-engineering session; every path below was exercised against the real portal."
+  },
+  "servers": [{ "url": "http://localhost:3000", "description": "Local" }],
+  "tags": [
+    { "name": "auth", "description": "Captcha + login" },
+    { "name": "student", "description": "Student data" },
+    { "name": "meta", "description": "Discovery" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "apiKey" },
+      "sessionHeader": { "type": "apiKey", "in": "header", "name": "X-ERP-Session" }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "INVALID_CREDENTIALS" },
+              "message": { "type": "string" }
+            }
+          }
+        }
+      },
+      "Captcha": {
+        "type": "object",
+        "properties": {
+          "sessionId": { "type": "string", "format": "uuid" },
+          "institute": { "type": "string" },
+          "captchaImage": { "type": "string", "description": "data:image/jpeg;base64,..." },
+          "ocrGuess": { "type": "string", "nullable": true, "description": "Server OCR guess (~33% accurate)" }
+        }
+      },
+      "LoginResult": {
+        "type": "object",
+        "properties": {
+          "apiKey": { "type": "string", "example": "erp_xxxxxxxx" },
+          "user": {
+            "type": "object",
+            "properties": {
+              "userId": { "type": "string" },
+              "registrationCode": { "type": "string" },
+              "profilePicUrl": { "type": "string" },
+              "profileSigUrl": { "type": "string" }
+            }
+          },
+          "role": { "type": "string", "example": "Student" },
+          "institute": { "type": "string" },
+          "expiresInSeconds": { "type": "integer", "example": 1500 },
+          "captchaAttempts": { "type": "integer" },
+          "solvedBy": { "type": "string", "enum": ["ocr", "client"] }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "registrationCode": { "type": "string" },
+          "fullName": { "type": "string" },
+          "rollNo": { "type": "string" },
+          "program": { "type": "string" },
+          "branch": { "type": "string" },
+          "semester": { "type": "string" },
+          "section": { "type": "string" },
+          "email": { "type": "string", "nullable": true },
+          "mobile": { "type": "string", "nullable": true },
+          "raw": { "type": "object", "description": "All 210 fields as returned by the ERP" }
+        }
+      },
+      "Subject": {
+        "type": "object",
+        "properties": {
+          "serial": { "type": "string" },
+          "name": { "type": "string" },
+          "code": { "type": "string" },
+          "type": { "type": "string" },
+          "syllabusCoverage": { "type": "string" },
+          "syllabusUrl": { "type": "string", "nullable": true }
+        }
+      },
+      "Timetable": {
+        "type": "object",
+        "properties": {
+          "asOf": { "type": "string" },
+          "slots": { "type": "array", "items": { "type": "string" } },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": { "type": "string" },
+                "periods": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "subject": { "type": "string" },
+                      "code": { "type": "string" },
+                      "teacher": { "type": "string" },
+                      "kind": { "type": "string", "example": "LECTURE" },
+                      "slot": { "type": "string" },
+                      "room": { "type": "string", "nullable": true },
+                      "type": { "type": "string", "example": "LUNCH" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Attendance": {
+        "type": "object",
+        "properties": {
+          "overall": {
+            "type": "object",
+            "properties": {
+              "percent": { "type": "number", "nullable": true },
+              "present": { "type": "integer" },
+              "absent": { "type": "integer" },
+              "totalLectures": { "type": "integer" },
+              "source": { "type": "string" }
+            }
+          },
+          "bySubject": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "code": { "type": "string" },
+                "percent": { "type": "number", "nullable": true }
+              }
+            }
+          }
+        }
+      },
+      "Assessment": {
+        "type": "object",
+        "properties": {
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "serial": { "type": "integer" },
+                "name": { "type": "string" },
+                "code": { "type": "string" },
+                "attendance": { "type": "string" },
+                "midSemMarks": { "type": "string" },
+                "midSemMax": { "type": "string" },
+                "unitTest": { "type": "string" }
+              }
+            }
+          },
+          "totals": { "type": "object", "nullable": true }
+        }
+      },
+      "Notice": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "date": { "type": "string", "example": "05-Nov-2026" },
+          "category": { "type": "string", "example": "ACADEMICS" },
+          "isNew": { "type": "boolean" },
+          "title": { "type": "string" },
+          "html": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "tags": ["meta"],
+        "summary": "Liveness probe",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "tags": ["meta"],
+        "summary": "OCR availability, session counts and route list",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/institutes": {
+      "get": {
+        "tags": ["meta"],
+        "summary": "Known institute keys and ids",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/auth/captcha": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Step 1 — open a session and get a captcha image",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "institute": { "type": "string", "example": "MIPS" } } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Captcha issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "ok": { "type": "boolean" }, "data": { "$ref": "#/components/schemas/Captcha" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Step 2 — log in (manual captcha, or ?auto=true for OCR + retries)",
+        "parameters": [
+          {
+            "name": "auto",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "Solve the captcha server-side with OCR and retry (captcha failures never count as failed logins)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "password"],
+                "properties": {
+                  "userId": { "type": "string", "example": "2026BT0683" },
+                  "password": { "type": "string" },
+                  "institute": { "type": "string", "example": "MIPS" },
+                  "sessionId": { "type": "string", "description": "From /v1/auth/captcha" },
+                  "captcha": { "type": "string", "description": "6-char answer you read from the image" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logged in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "ok": { "type": "boolean" }, "data": { "$ref": "#/components/schemas/LoginResult" } }
+                }
+              }
+            }
+          },
+          "400": { "description": "Wrong captcha — a fresh image is returned", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Bad credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "OCR exhausted its attempts — solve manually", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "tags": ["auth"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Current session identity",
+        "responses": { "200": { "description": "OK" }, "401": { "description": "No/!invalid key" } }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": ["auth"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Log out and discard the session",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/dashboard": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "All dashboard panels in one parallel call",
+        "responses": { "200": { "description": "Panels, each wrapped as { ok, data }" } }
+      }
+    },
+    "/v1/student/profile": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Student record",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "data": { "$ref": "#/components/schemas/Profile" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/student/subjects": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Registered subjects",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/Subject" } } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/student/timetable": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Weekly timetable with teachers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "data": { "$ref": "#/components/schemas/Timetable" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/student/attendance": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Attendance overall + per subject",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "data": { "$ref": "#/components/schemas/Attendance" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/student/assessment": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Mid-sem / unit-test / assignment marks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "data": { "$ref": "#/components/schemas/Assessment" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/student/classmates": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Class list",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/student/documents": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Important document links",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/student/coordinators": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Class coordinators",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/student/no-dues": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "No-dues status",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/student/todo": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "To-do list",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/student/assignments": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Assignment count / bar",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/student/feedback": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Open feedback forms",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/notices": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Circulars / notices",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Title search" },
+          { "name": "month", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 12 } },
+          { "name": "year", "in": "query", "schema": { "type": "integer", "example": 2026 } },
+          { "name": "category", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "count": { "type": "integer" },
+                        "notices": { "type": "array", "items": { "$ref": "#/components/schemas/Notice" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/calendar/holidays": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Academic calendar / holiday list",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/calendar/lists": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Available calendar lists",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/account/login-history": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Recent logins (date + IP)",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/account/leave-balance": {
+      "get": {
+        "tags": ["student"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Leave balances",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/raw": {
+      "post": {
+        "tags": ["meta"],
+        "security": [{ "bearerAuth": [] }],
+        "summary": "Escape hatch — call any upstream page method",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": { "type": "string", "example": "home.aspx/getMySubjects" },
+                  "payload": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Raw upstream result" } }
+      }
+    }
+  }
+}

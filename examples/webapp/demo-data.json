@@ -1,0 +1,954 @@
+{
+ "profile": {
+  "registrationCode": "2026BT0683",
+  "fullName": "TANMAY TIWARI",
+  "nameInHindi": null,
+  "rollNo": "N/A",
+  "enrollmentNo": null,
+  "examRollNo": null,
+  "program": "B.Tech",
+  "branch": "AIML",
+  "semester": "1",
+  "section": "AIML-1B-1",
+  "batch": null,
+  "institute": null,
+  "dateOfBirth": null,
+  "gender": null,
+  "email": null,
+  "mobile": null,
+  "fatherName": null,
+  "motherName": null,
+  "fatherMobile": null,
+  "motherMobile": null,
+  "category": null,
+  "admissionMode": null,
+  "isHostelMember": false,
+  "isTransportMember": false,
+  "hasPhoto": false,
+  "hasSignature": false
+ },
+ "subjects": [
+  {
+   "serial": "1",
+   "name": "Applied Chemistry for Smart Systems",
+   "code": "AAS102D",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Applied Chemistry for Smart Systems&sd=1502&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853127675"
+  },
+  {
+   "serial": "2",
+   "name": "Applied Chemistry for Smart Systems Lab",
+   "code": "AAS152D",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Applied Chemistry for Smart Systems Lab&sd=1498&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853127675"
+  },
+  {
+   "serial": "3",
+   "name": "Calculus and Linear Algebra",
+   "code": "AAS103D",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Calculus and Linear Algebra&sd=1487&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853127675"
+  },
+  {
+   "serial": "4",
+   "name": "Computer-Aided Engineering Drawing Lab",
+   "code": "ACE151E",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Computer-Aided Engineering Drawing Lab&sd=1494&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "5",
+   "name": "Electrical Engineering Lab",
+   "code": "AEE151A",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Electrical Engineering Lab&sd=1493&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "6",
+   "name": "Electronics Engineering Lab",
+   "code": "AEC151A",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Electronics Engineering Lab&sd=1499&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "7",
+   "name": "Environment & Sustainability",
+   "code": "AAC101",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Environment & Sustainability&sd=1501&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "8",
+   "name": "Fundamentals of Electrical Engineering",
+   "code": "AEE101A",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Fundamentals of Electrical Engineering&sd=1488&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "9",
+   "name": "Fundamentals of Electronics Engineering",
+   "code": "AEC101A",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Fundamentals of Electronics Engineering&sd=1496&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "10",
+   "name": "Fundamentals of Mechanical Engineering",
+   "code": "AME101A",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Fundamentals of Mechanical Engineering&sd=1497&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "11",
+   "name": "Innovation & Design Thinking Lab",
+   "code": "AID151",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Innovation & Design Thinking Lab&sd=1500&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "12",
+   "name": "Introduction to AI & Prompt Engineering",
+   "code": "AAI101",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Introduction to AI & Prompt Engineering&sd=1491&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "13",
+   "name": "Introduction to Indian Knowledge System",
+   "code": "AAS104",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Introduction to Indian Knowledge System&sd=1490&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "14",
+   "name": "Professional Communication & Technical Writing",
+   "code": "AAS105",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Professional Communication & Technical Writing&sd=1503&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  },
+  {
+   "serial": "15",
+   "name": "Programming Languages",
+   "code": "ACS101",
+   "type": "Theory",
+   "syllabusCoverage": "0.00",
+   "syllabusUrl": "View-Subject-Syllabus?subject=Programming Languages&sd=1489&sid=m0+yEe7pk5U=&p=XnZ/szfluNI=&b=dQAV1dCJdVc=&ys=M4ZW8YeV4KA=&sec=rh4U9z2i2ak=&i=639303624853283878"
+  }
+ ],
+ "timetable": {
+  "asOf": "15-Nov-2026 06:01:24 PM",
+  "slots": [
+   "09:45 AM - 10:35 AM",
+   "10:35 AM - 11:25 AM",
+   "11:30 AM - 12:20 PM",
+   "12:20 PM - 01:10 PM",
+   "01:10 PM - 02:00 PM",
+   "02:00 PM - 02:50 PM",
+   "02:55 PM - 03:45 PM",
+   "03:45 PM - 04:35 PM"
+  ],
+  "days": [
+   {
+    "day": "Monday",
+    "periods": [
+     {
+      "subject": "Fundamentals of Electronics Engineering",
+      "code": "AEC101A",
+      "teacher": "Dr. ANJANEY NIGAM",
+      "kind": "LECTURE",
+      "slot": "09:45 AM - 10:35 AM",
+      "room": null
+     },
+     {
+      "subject": "Professional Communication & Technical Writing",
+      "code": "AAS105",
+      "teacher": "Mrs. KOMAL TRIVEDI",
+      "kind": "LECTURE",
+      "slot": "10:35 AM - 11:25 AM",
+      "room": null
+     },
+     {
+      "subject": "Fundamentals of Mechanical Engineering",
+      "code": "AME101A",
+      "teacher": "Mr. SUBHASH MISHRA",
+      "kind": "LECTURE",
+      "slot": "11:30 AM - 12:20 PM",
+      "room": null
+     },
+     {
+      "type": "LUNCH"
+     },
+     null,
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "LECTURE",
+      "slot": "02:00 PM - 02:50 PM",
+      "room": null
+     },
+     {
+      "subject": "Programming Languages",
+      "code": "ACS101",
+      "teacher": "Ms. SHIVANI SHARMA",
+      "kind": "LECTURE",
+      "slot": "02:55 PM - 03:45 PM",
+      "room": null
+     },
+     {
+      "subject": "Applied Chemistry for Smart Systems",
+      "code": "AAS102D",
+      "teacher": "Dr. BRAJESH KR. MISHRA",
+      "kind": "LECTURE",
+      "slot": "03:45 PM - 04:35 PM",
+      "room": null
+     }
+    ]
+   },
+   {
+    "day": "Tuesday",
+    "periods": [
+     {
+      "subject": "Fundamentals of Mechanical Engineering",
+      "code": "AME101A",
+      "teacher": "Mr. SUBHASH MISHRA",
+      "kind": "LECTURE",
+      "slot": "09:45 AM - 10:35 AM",
+      "room": null
+     },
+     {
+      "subject": "Applied Chemistry for Smart Systems",
+      "code": "AAS102D",
+      "teacher": "Dr. BRAJESH KR. MISHRA",
+      "kind": "LECTURE",
+      "slot": "10:35 AM - 11:25 AM",
+      "room": null
+     },
+     {
+      "subject": "Applied Chemistry for Smart Systems",
+      "code": "AAS102D",
+      "teacher": "Dr. BRAJESH KR. MISHRA",
+      "kind": "LECTURE",
+      "slot": "11:30 AM - 12:20 PM",
+      "room": null
+     },
+     {
+      "type": "LUNCH"
+     },
+     {
+      "subject": "Electronics Engineering Lab",
+      "code": "AEC151A",
+      "teacher": "Dr. ANJANEY NIGAM",
+      "kind": "LAB",
+      "slot": "01:10 PM - 02:00 PM",
+      "room": null
+     },
+     {
+      "subject": "Electronics Engineering Lab",
+      "code": "AEC151A",
+      "teacher": "Dr. ANJANEY NIGAM",
+      "kind": "LAB",
+      "slot": "02:00 PM - 02:50 PM",
+      "room": null
+     },
+     {
+      "subject": "Programming Languages",
+      "code": "ACS101",
+      "teacher": "Ms. SHIVANI SHARMA",
+      "kind": "LECTURE",
+      "slot": "02:55 PM - 03:45 PM",
+      "room": null
+     },
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "TUTORIALS",
+      "slot": "03:45 PM - 04:35 PM",
+      "room": null
+     }
+    ]
+   },
+   {
+    "day": "Wednesday",
+    "periods": [
+     {
+      "subject": "Programming Languages",
+      "code": "ACS101",
+      "teacher": "Ms. SHIVANI SHARMA",
+      "kind": "LAB",
+      "slot": "09:45 AM - 10:35 AM",
+      "room": null
+     },
+     {
+      "subject": "Programming Languages",
+      "code": "ACS101",
+      "teacher": "Ms. SHIVANI SHARMA",
+      "kind": "LAB",
+      "slot": "10:35 AM - 11:25 AM",
+      "room": null
+     },
+     {
+      "subject": "Applied Chemistry for Smart Systems",
+      "code": "AAS102D",
+      "teacher": "Dr. BRAJESH KR. MISHRA",
+      "kind": "LECTURE",
+      "slot": "11:30 AM - 12:20 PM",
+      "room": null
+     },
+     {
+      "type": "LUNCH"
+     },
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "LECTURE",
+      "slot": "01:10 PM - 02:00 PM",
+      "room": null
+     },
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "LECTURE",
+      "slot": "02:00 PM - 02:50 PM",
+      "room": null
+     },
+     {
+      "subject": "Fundamentals of Mechanical Engineering",
+      "code": "AME101A",
+      "teacher": "Mr. SUBHASH MISHRA",
+      "kind": "LECTURE",
+      "slot": "02:55 PM - 03:45 PM",
+      "room": null
+     },
+     {
+      "subject": "Fundamentals of Electronics Engineering",
+      "code": "AEC101A",
+      "teacher": "Dr. ANJANEY NIGAM",
+      "kind": "LECTURE",
+      "slot": "03:45 PM - 04:35 PM",
+      "room": null
+     }
+    ]
+   },
+   {
+    "day": "Thursday",
+    "periods": [
+     {
+      "subject": "Applied Chemistry for Smart Systems",
+      "code": "AAS102D",
+      "teacher": "Dr. BRAJESH KR. MISHRA",
+      "kind": "LECTURE",
+      "slot": "09:45 AM - 10:35 AM",
+      "room": null
+     },
+     {
+      "subject": "Professional Communication & Technical Writing",
+      "code": "AAS105",
+      "teacher": "Mrs. KOMAL TRIVEDI",
+      "kind": "LECTURE",
+      "slot": "10:35 AM - 11:25 AM",
+      "room": null
+     },
+     {
+      "subject": "Fundamentals of Electronics Engineering",
+      "code": "AEC101A",
+      "teacher": "Dr. ANJANEY NIGAM",
+      "kind": "LECTURE",
+      "slot": "11:30 AM - 12:20 PM",
+      "room": null
+     },
+     {
+      "type": "LUNCH"
+     },
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "LECTURE",
+      "slot": "01:10 PM - 02:00 PM",
+      "room": null
+     },
+     {
+      "subject": "Programming Languages",
+      "code": "ACS101",
+      "teacher": "Ms. SHIVANI SHARMA",
+      "kind": "LECTURE",
+      "slot": "02:00 PM - 02:50 PM",
+      "room": null
+     },
+     {
+      "subject": "Fundamentals of Mechanical Engineering",
+      "code": "AME101A",
+      "teacher": "Mr. SUBHASH MISHRA",
+      "kind": "LECTURE",
+      "slot": "02:55 PM - 03:45 PM",
+      "room": null
+     },
+     null
+    ]
+   },
+   {
+    "day": "Friday",
+    "periods": [
+     {
+      "subject": "Professional Communication & Technical Writing",
+      "code": "AAS105",
+      "teacher": "Mrs. KOMAL TRIVEDI",
+      "kind": "LECTURE",
+      "slot": "09:45 AM - 10:35 AM",
+      "room": null
+     },
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "LECTURE",
+      "slot": "10:35 AM - 11:25 AM",
+      "room": null
+     },
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "LECTURE",
+      "slot": "11:30 AM - 12:20 PM",
+      "room": null
+     },
+     {
+      "type": "LUNCH"
+     },
+     {
+      "subject": "Applied Chemistry for Smart Systems",
+      "code": "AAS102D",
+      "teacher": "Dr. BRAJESH KR. MISHRA",
+      "kind": "LECTURE",
+      "slot": "01:10 PM - 02:00 PM",
+      "room": null
+     },
+     {
+      "subject": "Programming Languages",
+      "code": "ACS101",
+      "teacher": "Ms. SHIVANI SHARMA",
+      "kind": "LECTURE",
+      "slot": "02:00 PM - 02:50 PM",
+      "room": null
+     },
+     {
+      "subject": "Fundamentals of Electronics Engineering",
+      "code": "AEC101A",
+      "teacher": "Dr. ANJANEY NIGAM",
+      "kind": "LECTURE",
+      "slot": "02:55 PM - 03:45 PM",
+      "room": null
+     },
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "LECTURE",
+      "slot": "03:45 PM - 04:35 PM",
+      "room": null
+     }
+    ]
+   },
+   {
+    "day": "Saturday",
+    "periods": [
+     {
+      "subject": "Applied Chemistry for Smart Systems Lab",
+      "code": "AAS152D",
+      "teacher": "Dr. BRAJESH KR. MISHRA",
+      "kind": "LAB",
+      "slot": "09:45 AM - 10:35 AM",
+      "room": null
+     },
+     {
+      "subject": "Applied Chemistry for Smart Systems Lab",
+      "code": "AAS152D",
+      "teacher": "Dr. BRAJESH KR. MISHRA",
+      "kind": "LAB",
+      "slot": "10:35 AM - 11:25 AM",
+      "room": null
+     },
+     {
+      "subject": "Programming Languages",
+      "code": "ACS101",
+      "teacher": "Ms. SHIVANI SHARMA",
+      "kind": "LECTURE",
+      "slot": "11:30 AM - 12:20 PM",
+      "room": null
+     },
+     {
+      "type": "LUNCH"
+     },
+     {
+      "subject": "Calculus and Linear Algebra",
+      "code": "AAS103D",
+      "teacher": "Dr. SHIVANGI RATHORE",
+      "kind": "LECTURE",
+      "slot": "01:10 PM - 02:00 PM",
+      "room": null
+     },
+     {
+      "subject": "Fundamentals of Electronics Engineering",
+      "code": "AEC101A",
+      "teacher": "Dr. ANJANEY NIGAM",
+      "kind": "LECTURE",
+      "slot": "02:00 PM - 02:50 PM",
+      "room": null
+     },
+     {
+      "subject": "Innovation & Design Thinking Lab",
+      "code": "AID151",
+      "teacher": "Mr. DHRUV SRIVASTAVA",
+      "kind": "LECTURE",
+      "slot": "02:55 PM - 03:45 PM",
+      "room": null
+     },
+     {
+      "subject": "Innovation & Design Thinking Lab",
+      "code": "AID151",
+      "teacher": "Mr. DHRUV SRIVASTAVA",
+      "kind": "LECTURE",
+      "slot": "03:45 PM - 04:35 PM",
+      "room": null
+     }
+    ]
+   }
+  ]
+ },
+ "attendance": {
+  "overall": {
+   "percent": 72,
+   "present": 0,
+   "absent": 0,
+   "totalLectures": 0,
+   "source": "assessment-grid"
+  },
+  "bySubject": [
+   {
+    "name": "Applied Chemistry for Smart Systems",
+    "code": "AAS102D",
+    "percent": 79,
+    "status": "79"
+   },
+   {
+    "name": "Applied Chemistry for Smart Systems Lab",
+    "code": "AAS152D",
+    "percent": 0,
+    "status": "0"
+   },
+   {
+    "name": "Calculus and Linear Algebra",
+    "code": "AAS103D",
+    "percent": 72,
+    "status": "72"
+   },
+   {
+    "name": "Computer-Aided Engineering Drawing Lab",
+    "code": "ACE151E",
+    "percent": 0,
+    "status": "0"
+   },
+   {
+    "name": "Electrical Engineering Lab",
+    "code": "AEE151A",
+    "percent": 0,
+    "status": "0"
+   },
+   {
+    "name": "Electronics Engineering Lab",
+    "code": "AEC151A",
+    "percent": 67,
+    "status": "67"
+   },
+   {
+    "name": "Environment & Sustainability",
+    "code": "AAC101",
+    "percent": 0,
+    "status": "0"
+   },
+   {
+    "name": "Fundamentals of Electrical Engineering",
+    "code": "AEE101A",
+    "percent": 0,
+    "status": "0"
+   },
+   {
+    "name": "Fundamentals of Electronics Engineering",
+    "code": "AEC101A",
+    "percent": 86,
+    "status": "86"
+   },
+   {
+    "name": "Fundamentals of Mechanical Engineering",
+    "code": "AME101A",
+    "percent": 70,
+    "status": "70"
+   },
+   {
+    "name": "Innovation & Design Thinking Lab",
+    "code": "AID151",
+    "percent": 100,
+    "status": "100"
+   },
+   {
+    "name": "Introduction to AI & Prompt Engineering",
+    "code": "AAI101",
+    "percent": 0,
+    "status": "0"
+   },
+   {
+    "name": "Introduction to Indian Knowledge System",
+    "code": "AAS104",
+    "percent": 0,
+    "status": "0"
+   },
+   {
+    "name": "Professional Communication & Technical Writing",
+    "code": "AAS105",
+    "percent": 88,
+    "status": "88"
+   },
+   {
+    "name": "Programming Languages",
+    "code": "ACS101",
+    "percent": 60,
+    "status": "60"
+   }
+  ],
+  "totals": {
+   "attendancePercent": "72 %",
+   "midSemObtained": "0",
+   "midSemMax": "450",
+   "unitTestObtained": "0",
+   "unitTestMax": "20"
+  }
+ },
+ "assessment": {
+  "subjects": [
+   {
+    "serial": 1,
+    "name": "Applied Chemistry for Smart Systems",
+    "code": "AAS102D",
+    "attendance": "79",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 2,
+    "name": "Applied Chemistry for Smart Systems Lab",
+    "code": "AAS152D",
+    "attendance": "0",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 3,
+    "name": "Calculus and Linear Algebra",
+    "code": "AAS103D",
+    "attendance": "72",
+    "midSemMarks": "Not Approved",
+    "midSemMax": "30",
+    "unitTest": "Not Approved"
+   },
+   {
+    "serial": 4,
+    "name": "Computer-Aided Engineering Drawing Lab",
+    "code": "ACE151E",
+    "attendance": "0",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 5,
+    "name": "Electrical Engineering Lab",
+    "code": "AEE151A",
+    "attendance": "0",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 6,
+    "name": "Electronics Engineering Lab",
+    "code": "AEC151A",
+    "attendance": "67",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 7,
+    "name": "Environment & Sustainability",
+    "code": "AAC101",
+    "attendance": "0",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 8,
+    "name": "Fundamentals of Electrical Engineering",
+    "code": "AEE101A",
+    "attendance": "0",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 9,
+    "name": "Fundamentals of Electronics Engineering",
+    "code": "AEC101A",
+    "attendance": "86",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 10,
+    "name": "Fundamentals of Mechanical Engineering",
+    "code": "AME101A",
+    "attendance": "70",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 11,
+    "name": "Innovation & Design Thinking Lab",
+    "code": "AID151",
+    "attendance": "100",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 12,
+    "name": "Introduction to AI & Prompt Engineering",
+    "code": "AAI101",
+    "attendance": "0",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 13,
+    "name": "Introduction to Indian Knowledge System",
+    "code": "AAS104",
+    "attendance": "0",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 14,
+    "name": "Professional Communication & Technical Writing",
+    "code": "AAS105",
+    "attendance": "88",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   },
+   {
+    "serial": 15,
+    "name": "Programming Languages",
+    "code": "ACS101",
+    "attendance": "60",
+    "midSemMarks": "NA",
+    "midSemMax": "30",
+    "unitTest": "NA"
+   }
+  ],
+  "totals": {
+   "attendancePercent": "72 %",
+   "midSemObtained": "0",
+   "midSemMax": "450",
+   "unitTestObtained": "0",
+   "unitTestMax": "20"
+  }
+ },
+ "notices": {
+  "count": 100,
+  "notices": [
+   {
+    "id": "28841",
+    "date": "05-Nov-2026",
+    "category": "ACADEMICS",
+    "isNew": false,
+    "title": "Notice for Newly Admitted Students Regarding Creation of APAAR ID (ABC ID)",
+    "html": "<p><span style=\"font-size: 14pt; color: rgb(128, 0, 0);\" data-mce-style=\"font-size: 14pt; color: #800000;\"><strong>Notice for Newly Admitted Students Regarding Creation of APAAR ID (ABC ID)&nbsp;<a href=\"https://erp.mpgi.net//clientdata/repository/ddde71f4-e6f7-40ad-96c8-d7ab69145ad0/notice_for_newly_admitted_students.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/ddde71f4-e6f7-40ad-96c8-d7ab69145ad0/notice_for_newly_admitted_students.pdf\">Click Here</a></strong></span><br data-mce-bogus=\"1\"></p>"
+   },
+   {
+    "id": "28829",
+    "date": "03-Nov-2026",
+    "category": "ACADEMICS",
+    "isNew": false,
+    "title": "Regarding Mandatory ABC ID Creation and Aadhaar Verification of All Enrolled Students for the Academic Session 2026–27",
+    "html": "<p><span color=\"#800000\" data-mce-style=\"color: #800000;\" style=\"color: #800000;\"><span style=\"font-size: 18.6667px;\"><strong>Regarding Mandatory ABC ID Creation and Aadhaar Verification of All Enrolled Students for the Academic Session 2026–27&nbsp;<a href=\"https://erp.mpgi.net//clientdata/repository/884739e0-1dbb-4eab-9de3-97fadf39f85c/abc_id.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/884739e0-1dbb-4eab-9de3-97fadf39f85c/abc_id.pdf\">Click Here</a></strong></span></span></p>"
+   },
+   {
+    "id": "28821",
+    "date": "31-Oct-2026",
+    "category": "EVENTS",
+    "isNew": false,
+    "title": "Notice for D3 Night",
+    "html": "<p><span style=\"font-size: 14pt; color: rgb(128, 0, 0);\" data-mce-style=\"font-size: 14pt; color: #800000;\"><strong>Notice for D3 Night&nbsp;<a href=\"https://erp.mpgi.net//clientdata/repository/368431ce-b84f-47df-99a8-0fe44ff598f1/notice_for_d3_night.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/368431ce-b84f-47df-99a8-0fe44ff598f1/notice_for_d3_night.pdf\">Click Here</a></strong></span><br data-mce-bogus=\"1\"></p>"
+   },
+   {
+    "id": "28769",
+    "date": "30-Oct-2026",
+    "category": "EXAMINATION CELL",
+    "isNew": false,
+    "title": "NOTICE REGARDING BBA BCA 2ND 3RD YEAR EXAM SCHEDULE",
+    "html": "<p>N<span style=\"font-size: 14pt; color: rgb(128, 0, 0);\" data-mce-style=\"font-size: 14pt; color: #800000;\"><strong>OTICE REGARDING BBA BCA 2ND 3RD YEAR EXAM SCHEDULE<a href=\"https://erp.mpgi.net//clientdata/repository/0db65665-d0c7-44d9-aaee-468a6e1c9c3c/kn142_bba_bca_2nd_3rd_exam_sch.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/0db65665-d0c7-44d9-aaee-468a6e1c9c3c/kn142_bba_bca_2nd_3rd_exam_sch.pdf\"> CLICK HERE&nbsp;</a></strong></span></p>"
+   },
+   {
+    "id": "28757",
+    "date": "30-Oct-2026",
+    "category": "EXAMINATION CELL",
+    "isNew": false,
+    "title": "NOTICE REGARDING MBA 2ND YEAR EXAM SCHEDULE",
+    "html": "<p><span style=\"font-size: 14pt;\" data-mce-style=\"font-size: 14pt;\"><strong><span style=\"color: rgb(128, 0, 0);\">NOTICE REGARDING MBA 2ND YEAR EXAM SCHEDULE</span>&nbsp;<a href=\"https://erp.mpgi.net//clientdata/repository/9fe721e6-da8f-45cc-ae24-edd41768032c/mba_second_year_exam_schedule.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/9fe721e6-da8f-45cc-ae24-edd41768032c/mba_second_year_exam_schedule.pdf\">CLICK HERE&nbsp;&nbsp;</a></strong></span></p>"
+   },
+   {
+    "id": "28741",
+    "date": "30-Oct-2026",
+    "category": "EXAMINATION CELL",
+    "isNew": false,
+    "title": "NOTICE REGARDING MCA MBA 2ND YEAR EXAM SCHEDULE",
+    "html": "<p><span style=\"color: rgb(128, 0, 0); font-size: 14pt;\" data-mce-style=\"color: #800000; font-size: 14pt;\"><strong>NOTICE REGARDING MCA MBA 2ND YEAR EXAM SCHEDULE<a href=\"https://erp.mpgi.net//clientdata/repository/8e119429-dc13-4ce0-889e-3795c8f0c947/mca_mba_2nd_year_exam_schdule.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/8e119429-dc13-4ce0-889e-3795c8f0c947/mca_mba_2nd_year_exam_schdule.pdf\"> CLICK HERE&nbsp;</a></strong></span></p>"
+   },
+   {
+    "id": "28723",
+    "date": "30-Oct-2026",
+    "category": "GENERAL",
+    "isNew": false,
+    "title": "Notice Regarding Entry and Exit Guidelines for N-Block",
+    "html": "<p><span style=\"font-size: 14pt; color: rgb(128, 0, 0);\" data-mce-style=\"font-size: 14pt; color: #800000;\"><strong>Notice Regarding Entry and Exit Guidelines for N-Block&nbsp;<a href=\"https://erp.mpgi.net//clientdata/repository/e298b14c-f11a-4ec3-9529-070f601ed91f/entry_and_exit_guidelines.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/e298b14c-f11a-4ec3-9529-070f601ed91f/entry_and_exit_guidelines.pdf\">Click Here</a></strong></span><br data-mce-bogus=\"1\"></p>"
+   },
+   {
+    "id": "28700",
+    "date": "28-Oct-2026",
+    "category": "EVENTS",
+    "isNew": false,
+    "title": "NOTICE REGARDING OF D-3 NIGHT PAYMENT",
+    "html": "<p><span style=\"font-size: 14pt;\" data-mce-style=\"font-size: 14pt;\"><span style=\"color: rgb(128, 0, 0);\" data-mce-style=\"color: #800000;\"><strong>NOTICE REGARDING OF D-3 NIGHT PAYMENT</strong></span><span style=\"color: rgb(0, 0, 255); font-size: 12pt;\" data-mce-style=\"color: #0000ff; font-size: 12pt;\">&nbsp;<a href=\"https://erp.mpgi.net//clientdata/repository/9c7f4322-20f3-4b38-b7a3-75b5d9d3ed5a/event_30th.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/9c7f4322-20f3-4b38-b7a3-75b5d9d3ed5a/event_30th.pdf\"><span style=\"color: rgb(0, 0, 255);\">CLICK HERE&nbsp;</span></a></span></span></p>"
+   },
+   {
+    "id": "28636",
+    "date": "25-Oct-2026",
+    "category": "ACADEMICS",
+    "isNew": false,
+    "title": "Notice-Regarding Mandatory Creation and Updating of ABC IDs and Verification of Students’ Aadhaar Details on the AKTU ERP Portal",
+    "html": "<p><span style=\"color: rgb(128, 0, 0); font-size: 14pt;\" data-mce-style=\"color: #800000; font-size: 14pt;\"><strong>Notice-Regarding Mandatory Creation and Updating of ABC IDs and Verification of Students’ Aadhaar Details on the AKTU ERP Portal&nbsp;<span style=\"color: rgb(0, 0, 255);\" data-mce-style=\"color: #0000ff;\">&nbsp;</span></strong><span style=\"color: rgb(0, 0, 255);\" data-mce-style=\"color: #0000ff;\"><a href=\"https://erp.mpgi.net//clientdata/repository/5042ed95-16d7-4454-b880-6b4dd4a02818/aktu_notice_adhar.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/5042ed95-16d7-4454-b880-6b4dd4a02818/aktu_notice_adhar.pdf\"><span style=\"color: rgb(0, 0, 255);\" data-mce-style=\"color: #0000ff;\">click here</span></a></span></span></p>"
+   },
+   {
+    "id": "28620",
+    "date": "24-Oct-2026",
+    "category": "ACADEMICS",
+    "isNew": false,
+    "title": "SUNDAY,25TH OCTOBER 2026,AS A WORKING DAY",
+    "html": "<p><span style=\"font-size: 14pt;\" data-mce-style=\"font-size: 14pt;\"><strong><span style=\"color: rgb(128, 0, 0);\">SUNDAY,25TH OCTOBER 2026,AS A WORKING DAY&nbsp;<span style=\"font-size: 12pt;\" data-mce-style=\"font-size: 12pt;\"><a href=\"https://erp.mpgi.net//clientdata/repository/1abb3917-ec4d-460d-84b7-515feeab7183/25th_oct_2026_as_a_working_day.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/1abb3917-ec4d-460d-84b7-515feeab7183/25th_oct_2026_as_a_working_day.pdf\">CLICK HERE</a></span></span></strong></span></p>"
+   },
+   {
+    "id": "28580",
+    "date": "24-Oct-2026",
+    "category": "GENERAL",
+    "isNew": false,
+    "title": "Notice regarding the Demise of the Father of Mr. Sandeep Tripathi, Assistant Professor, Department of Computer Applications",
+    "html": "<p><span style=\"font-size: 14pt; color: rgb(128, 0, 0);\" data-mce-style=\"font-size: 14pt; color: #800000;\"><strong>Notice regarding the Demise of the Father of Mr. Sandeep Tripathi, Assistant Professor, Department of Computer Applications&nbsp;<a href=\"https://erp.mpgi.net//clientdata/repository/f37f8b08-cd31-4841-b40b-ab7d7e287559/condolence_notice.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/f37f8b08-cd31-4841-b40b-ab7d7e287559/condolence_notice.pdf\">Click Here</a></strong></span><br data-mce-bogus=\"1\"></p>"
+   },
+   {
+    "id": "28520",
+    "date": "17-Oct-2026",
+    "category": "EVENTS",
+    "isNew": false,
+    "title": "FRESHERS' DETAILS BTECH",
+    "html": "<p><span style=\"font-size: 14pt;\" data-mce-style=\"font-size: 14pt;\"><strong><span style=\"background-color: rgb(255, 255, 255); color: rgb(153, 51, 0);\">FRESHERS' DETAILS BTECH</span><span style=\"font-size: 12pt; color: rgb(0, 0, 255);\">&nbsp;<a href=\"https://erp.mpgi.net//clientdata/repository/aa2d4301-a1e8-445a-842e-40a99f166d5f/btech_freshers_details.pdf\" data-mce-href=\"https://erp.mpgi.net//clientdata/repository/aa2d4301-a1e8-445a-842e-40a99f166d5f/btech_freshers_details.pdf\">CLICK HERE&nbsp;</a></span></strong></span></p>"
+   }
+  ]
+ },
+ "holidays": [
+  {
+   "serial": 1,
+   "name": "Independence Day",
+   "dates": "15-Aug-2026 to 15-Aug-2026"
+  },
+  {
+   "serial": 2,
+   "name": "Eid-e-Milad*",
+   "dates": "26-Aug-2026 to 26-Aug-2026"
+  },
+  {
+   "serial": 3,
+   "name": "Clubbed Holidays",
+   "dates": "27-Aug-2026 to 27-Aug-2026"
+  },
+  {
+   "serial": 4,
+   "name": "Raksha Bandhan",
+   "dates": "28-Aug-2026 to 28-Aug-2026"
+  },
+  {
+   "serial": 5,
+   "name": "Clubbed Holidays",
+   "dates": "29-Aug-2026 to 29-Aug-2026"
+  },
+  {
+   "serial": 6,
+   "name": "Janamashtami",
+   "dates": "04-Sep-2026 to 04-Sep-2026"
+  },
+  {
+   "serial": 7,
+   "name": "Gandhi Jayanti",
+   "dates": "02-Oct-2026 to 02-Oct-2026"
+  },
+  {
+   "serial": 8,
+   "name": "Maha Navami",
+   "dates": "19-Oct-2026 to 19-Oct-2026"
+  },
+  {
+   "serial": 9,
+   "name": "Dussehra",
+   "dates": "20-Oct-2026 to 20-Oct-2026"
+  },
+  {
+   "serial": 10,
+   "name": "Deepawali",
+   "dates": "06-Nov-2026 to 11-Nov-2026"
+  },
+  {
+   "serial": 11,
+   "name": "Guru Nanak Jayanti",
+   "dates": "24-Nov-2026 to 24-Nov-2026"
+  },
+  {
+   "serial": 12,
+   "name": "Christmas",
+   "dates": "25-Dec-2026 to 25-Dec-2026"
+  }
+ ]
+}
