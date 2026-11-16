@@ -207,6 +207,49 @@
     return this._req('/notices' + (q ? '?' + q : ''));
   };
 
+  /**
+   * ---------------------------------------------------------------- fees
+   * The eLOGiPay fee portal is a SEPARATE system with its own login and its own
+   * token. Log in separately; the `pay_` token never mixes with the ERP one.
+   */
+  MipsErp.prototype.feeLogin = function (enrollmentNo, password) {
+    var self = this;
+    var url = self.baseUrl + (self.mode === 'proxy' ? '/api/erp/fees/login' : '/v1/fees/login');
+    return request('POST', url, {
+      body: { enrollmentNo: enrollmentNo, password: password },
+      timeout: 30000, // no OCR here — this is fast
+    }).then(function (res) {
+      // the proxy returns the fee payload directly; the direct API wraps it
+      var d = res && res.ok === true && 'data' in res ? res.data : res;
+      self.feeToken = d.apiKey;
+      return d;
+    });
+  };
+
+  MipsErp.prototype._feeReq = function (path, opts) {
+    var prefix = this.mode === 'proxy' ? '/api/erp' : '/v1';
+    return request('GET', this.baseUrl + prefix + path, {
+      headers: this.feeToken ? { Authorization: 'Bearer ' + this.feeToken } : {},
+      timeout: (opts && opts.timeout) || this.timeout,
+    }).then(function (res) {
+      return res && res.ok === true && 'data' in res ? res.data : res;
+    });
+  };
+
+  MipsErp.prototype.feeDashboard = function () { return this._feeReq('/fees/dashboard', { timeout: 30000 }); };
+  MipsErp.prototype.feeDues = function () { return this._feeReq('/fees/dues'); };
+  /** `type` filters to FEE | DISCOUNT | RECEIPT | REFUND. */
+  MipsErp.prototype.feeInvoices = function (type) {
+    return this._feeReq('/fees/invoices' + (type ? '?type=' + encodeURIComponent(type) : ''));
+  };
+  MipsErp.prototype.feeReceipts = function () { return this._feeReq('/fees/receipts'); };
+  MipsErp.prototype.feeLogout = function () {
+    var self = this;
+    return request('POST', self.baseUrl + (self.mode === 'proxy' ? '/api/erp/fees/logout' : '/v1/fees/logout'), {
+      headers: self.feeToken ? { Authorization: 'Bearer ' + self.feeToken } : {},
+    }).then(function () { self.feeToken = null; return { loggedOut: true }; });
+  };
+
   MipsErp.prototype.logout = function () {
     var self = this;
     var path = self.mode === 'proxy' ? '/api/erp/logout' : '/v1/auth/logout';
