@@ -379,4 +379,145 @@ export function parseMonthFilter(input) {
   return idx >= 0 ? idx + 1 : null;
 }
 
+// ---------------------------------------------------------------------------
+// eLOGiPay (fee portal) parsers. Separate system from the ERP above.
+// ---------------------------------------------------------------------------
+
+const PAY_FIELDS = {
+  textEnrl: 'enrollmentNo',
+  textStudentName: 'studentName',
+  textBranch: 'branch',
+  textCourse: 'course',
+  textSessionYear: 'session',
+  textInvoiceHead: 'invoiceHead',
+  textInvoiceType: 'invoiceType',
+  textInvoiceDate: 'invoiceDate',
+  textAmount: 'amount',
+  textRefundAmount: 'refundAmount',
+  textAdvanceAmount: 'advanceAmount',
+  textReceiptAmount: 'receiptAmount',
+  textDiscount: 'discount',
+  textBalance: 'balance',
+  textCompanyName: 'institute',
+};
+
+const PAY_NUMERIC = new Set([
+  'amount', 'refundAmount', 'advanceAmount', 'receiptAmount', 'discount', 'balance',
+]);
+
+const decodePay = (s) =>
+  String(s ?? '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+
+/**
+ * Parse the eLOGiPay "Outstanding Report".
+ *
+ * The rendered table is only a header shell — the row data lives in one set of
+ * disabled inputs per row (`...repIndentDetails$ctl01$textAmount`), so read
+ * those values, not the cells.
+ */
+export function parseOutstandingReport(html) {
+  if (!html || typeof html !== 'string') return { rows: [], totals: {}, student: null, byHead: [] };
+
+  const byControl = new Map();
+  const re = /<input[^>]*name="ctl00\$ContentPlaceHolder1\$repIndentDetails\$ctl(\d+)\$(\w+)"[^>]*>/g;
+  for (const m of html.matchAll(re)) {
+    const [, ctl, field] = m;
+    const key = PAY_FIELDS[field];
+    if (!key) continue;
+    const v = m[0].match(/value="([^"]*)"/);
+    if (!v) continue;
+    const raw = decodePay(v[1]);
+    if (!byControl.has(ctl)) byControl.set(ctl, {});
+    byControl.get(ctl)[key] = PAY_NUMERIC.has(key) ? Number(raw.replace(/,/g, '')) || 0 : raw;
+  }
+
+  const rows = [...byControl.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([ctl, r]) => ({ serial: Number(ctl), ...r }))
+    .filter((r) => r.enrollmentNo);
+
+  const first = rows[0] || null;
+  const student = first
+    ? {
+        enrollmentNo: first.enrollmentNo,
+        name: first.studentName,
+        branch: first.branch,
+        course: first.course,
+        session: first.session,
+        institute: first.institute,
+      }
+    : null;
+
+  const totals = {
+    invoiceCount: rows.length, charged: 0, receipts: 0, discounts: 0, refunds: 0, advances: 0, outstanding: 0,
+  };
+  const byHead = new Map();
+  for (const r of rows) {
+    const type = String(r.invoiceType || '').toUpperCase();
+    const head = r.invoiceHead || 'UNKNOWN';
+    const acc = byHead.get(head) || { head, charged: 0, receipts: 0, discounts: 0, refunds: 0, balance: 0 };
+    if (type === 'FEE') { totals.charged += r.amount || 0; acc.charged += r.amount || 0; }
+    else if (type === 'RECEIPT') { totals.receipts += r.receiptAmount || 0; acc.receipts += r.receiptAmount || 0; }
+    else if (type === 'DISCOUNT') { totals.discounts += r.discount || 0; acc.discounts += r.discount || 0; }
+    else if (type === 'REFUND') { totals.refunds += r.refundAmount || 0; acc.refunds += r.refundAmount || 0; }
+    totals.advances += r.advanceAmount || 0;
+    acc.balance = r.balance || acc.balance;
+    byHead.set(head, acc);
+  }
+
+  // The portal prints the authoritative outstanding figure in hdnbalance.
+  const hdn = html.match(/id="ContentPlaceHolder1_hdnbalance"[^>]*value="([^"]*)"/i);
+  const hdnBalance = hdn ? Number(decodePay(hdn[1]).replace(/,/g, '')) : NaN;
+  totals.outstanding =
+    Number.isFinite(hdnBalance) && hdnBalance > 0 ? hdnBalance : rows.length ? rows[rows.length - 1].balance || 0 : 0;
+
+  const from = html.match(/id="ContentPlaceHolder1_hdnFromDate"[^>]*value="([^"]*)"/i);
+  const to = html.match(/id="ContentPlaceHolder1_hdnToDate"[^>]*value="([^"]*)"/i);
+
+  return {
+    rows,
+    student,
+    totals,
+    byHead: [...byHead.values()],
+    period: {
+      from: from ? decodePay(from[1]) : null,
+      to: to ? decodePay(to[1]) : null,
+    },
+  };
+}
+
+/**
+ * Receipts on Commercial/MyFees.aspx. Currently the portal renders the header
+ * and empty rows for this student, so an empty array is a normal answer.
+ */
+export function parseFeeReceipts(html) {
+  if (!html || typeof html !== 'string') return [];
+  const out = [];
+  for (const m of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const cells = [...m[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)]
+      .map((c) => decodePay(c[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')))
+      .filter((c) => c !== '');
+    if (cells.length < 6) continue;
+    if (/receipt\s*no/i.test(cells[0])) continue;
+    const [receiptNo, receiptDate, instrumentNo, instrumentDate, payMode, amount] = cells;
+    if (!receiptNo || !/\d/.test(receiptNo)) continue;
+    out.push({
+      receiptNo,
+      receiptDate: receiptDate || null,
+      instrumentNo: instrumentNo || null,
+      instrumentDate: instrumentDate || null,
+      payMode: payMode || null,
+      amount: Number(String(amount).replace(/[^0-9.]/g, '')) || 0,
+    });
+  }
+  return out;
+}
+
 export const _internal = { clean };
