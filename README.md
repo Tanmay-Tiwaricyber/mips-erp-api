@@ -38,12 +38,20 @@ curl -X POST localhost:3000/v1/auth/login \
 curl localhost:3000/v1/dashboard -H 'Authorization: Bearer erp_…'
 ```
 
-Run the full end-to-end check against the real portal:
+Run the checks against the real portal:
 
 ```bash
-API_URL=http://localhost:3000 ERP_USER=2026BT0683 ERP_PASS='…' node examples/smoke.mjs
-# ✅ all checks passed
+export API_URL=http://localhost:3000 ERP_USER=2026BT0683 ERP_PASS='…'
+
+node examples/smoke.mjs                  # 24 checks — every endpoint + auth guard
+node examples/test-attendance-report.mjs # 27 checks — cumulative/month/subject attendance
+node examples/test-daily.mjs             # 15 checks — daily attendance, all three states
+node examples/test-peruser.mjs           # 12 checks — per-user token isolation
 ```
+
+All four pass today. `test-daily.mjs` also accepts `DATE=2026-11-14` to pin the day
+under test, and `capture-demo.mjs` re-records `examples/webapp/demo-data.json` from a
+live session (so the demo UI never drifts from the real API).
 
 ---
 
@@ -63,6 +71,11 @@ API_URL=http://localhost:3000 ERP_USER=2026BT0683 ERP_PASS='…' node examples/s
 | `GET` | `/v1/student/subjects` | subjects + codes + syllabus links |
 | `GET` | `/v1/student/timetable` | weekly grid with teachers, rooms, LECTURE/LAB/TUTORIAL |
 | `GET` | `/v1/student/attendance` | overall % + per-subject % |
+| `GET` | `/v1/student/attendance/summary` | **cumulative totals + 12-month breakdown** — `?month=11\|November\|all` |
+| `GET` | `/v1/student/attendance/by-subject` | **per-subject totals** (optional `?month=`), theory vs lab split |
+| `GET` | `/v1/student/attendance/complete` | **every attendance view in one call** |
+| `GET` | `/v1/student/attendance/daily` | **per-period attendance for one date** — `?date=YYYY-MM-DD\|DD-Mon-YYYY\|DD/MM/YYYY`; each period is `present`, `absent` or `not marked` |
+| `GET` | `/v1/student/attendance/daily/history` | daily attendance across a range — `?from=&to=` (max 31 days), per-subject totals |
 | `GET` | `/v1/student/assessment` | mid-sem, unit test, assignment marks |
 | `GET` | `/v1/student/classmates` | class list with emails |
 | `GET` | `/v1/student/documents` | important document links |
@@ -79,6 +92,104 @@ API_URL=http://localhost:3000 ERP_USER=2026BT0683 ERP_PASS='…' node examples/s
 | `POST` | `/v1/raw` | **escape hatch** — call any upstream `page.aspx/Method` |
 
 `openapi.json` contains the full machine-readable spec (point Swagger UI / Postman at it).
+
+### Attendance — every view the portal has
+
+The portal shows attendance in **three** different ways, and the API exposes all of
+them plus one combined call:
+
+| what the portal shows | endpoint | shape |
+|---|---|---|
+| "Cumulative Attendance" pie chart + totals row | `/v1/student/attendance/summary` | `present / absent / total / percent` + `byMonth[12]` |
+| the report's per-subject grid | `/v1/student/attendance/by-subject` | one row per subject + `overall` + `byType{theory,lab}` |
+| the class-by-class marks for a day | `/v1/student/attendance/daily` | one row per period: present / absent / not marked |
+| all of the above at once | `/v1/student/attendance/complete` | cumulative + byMonth + bySubject |
+
+```bash
+# cumulative: 68 present, 25 absent, 93 lectures → 73%
+GET /v1/student/attendance/summary
+# → { "scope":"cumulative", "present":68, "absent":25, "total":93, "percent":73,
+#     "byMonth":[ { "month":10, "monthName":"October", "present":45, "absent":12, "total":57, "percent":79 },
+#                 { "month":11, "monthName":"November", "present":23, "absent":13, "total":36, "percent":64 }, … ],
+#     "monthsWithLectures":["October","November"] }
+
+# one month, either as a number or a name
+GET /v1/student/attendance/summary?month=11
+GET /v1/student/attendance/summary?month=November
+
+# per subject, cumulatively or for a month
+GET /v1/student/attendance/by-subject
+GET /v1/student/attendance/by-subject?month=10
+# → { "subjects":[ { "name":"Programming Languages", "code":"ACS101", "present":10,
+#                    "absent":6, "total":16, "percent":62 }, … ],
+#     "overall":{ "present":68, "absent":25, "total":93, "percent":73 },
+#     "byType":{ "theory":[…], "lab":[…] } }
+```
+
+Three behaviours worth knowing:
+
+- **`percent` is `null`, not `0`, when `total` is 0.** Six subjects have no marked
+  lectures this term. That is "not marked yet", not "0% attendance" — don't render
+  it as a zero bar.
+- **The theory/lab split is done on the subject *name*, not the portal's `type`
+  column.** The ERP labels lab subjects as `"Theory"`, so `byType` uses
+  lab/practical/workshop/drawing detection instead. Use `byType`, not `type`.
+- **The subject totals add up to the cumulative figure** (68/25/93 today). That is
+  the check that proves the subject→id mapping is right, and it's asserted in
+  `examples/test-attendance-report.mjs`.
+
+**What the API cannot give you:** the ERP has no endpoint that lists individual
+dated lecture records for a student. `getAttendance` returns aggregate counts only,
+so "was I marked present in period 3 on 5 October" is only answerable through the
+timetable grid (`/v1/student/attendance/daily`), one date at a time.
+
+### Daily (per-period) attendance
+
+Two endpoints, for the class-by-class view a student actually cares about:
+
+```
+GET /v1/student/attendance/daily?date=2026-11-16
+GET /v1/student/attendance/daily/history?from=2026-11-09&to=2026-11-14
+```
+
+Every period carries one of **three** states — this is the bit most attendance
+UIs get wrong, because the portal has no "Not Marked" markup at all: a period
+that hasn't been marked simply has no attendance span.
+
+```json
+{
+  "date": "16-Nov-2026",
+  "weekday": "Monday",
+  "summary": { "marked": 4, "present": 4, "absent": 0, "notMarked": 2, "percent": 100 },
+  "periods": [
+    { "period": 1, "slot": "09:45 AM - 10:35 AM", "subject": "Fundamentals of Electronics Engineering",
+      "code": "AEC101A", "teacher": "Dr. ANJANEY NIGAM", "kind": "LECTURE",
+      "attendance": null, "attendanceLabel": "Not Marked" },
+    { "period": 2, "slot": "10:35 AM - 11:25 AM", "subject": "Professional Communication & Technical Writing",
+      "code": "AAS105", "teacher": "Mrs. KOMAL TRIVEDI", "kind": "LECTURE",
+      "attendance": "present", "attendanceLabel": "Present" }
+  ],
+  "present": [ { "subject": "…", "code": "AAS105" } ],
+  "absent": [],
+  "notMarked": [ { "subject": "…", "code": "AEC101A" } ]
+}
+```
+
+| field | meaning |
+|---|---|
+| `attendance` | `"present"` \| `"absent"` \| `null` (= not marked yet) |
+| `attendanceLabel` | ready-to-render text: `Present` / `Absent` / `Not Marked` |
+| `summary.percent` | present ÷ marked (unmarked periods don't hurt the percentage) |
+| `period` | position in the portal's grid, so lunch/gaps stay aligned |
+| `periods[]` | real class slots only — empty grid holes and `LUNCH` are dropped |
+
+`/v1/dashboard` includes the same object as `data.todayAttendance`
+(a panel envelope: `{ ok, data }`), and `?date=YYYY-MM-DD` pins the day.
+
+Notes: dates accept `2026-11-16`, `16-Nov-2026` or `16/11/2026`.
+Future dates and holidays legitimately come back with everything unmarked;
+Sundays have no classes. History is capped at 31 days (`RANGE_TOO_LARGE`),
+skips Sundays, and defaults to the last 7 days.
 
 ---
 
