@@ -47,6 +47,41 @@ interface MipsErpApi {
     @GET("api/erp/student/attendance")
     suspend fun attendance(@Header("X-Session-Token") token: String): Envelope<Attendance>
 
+    /** Cumulative totals + month-by-month breakdown (the portal's pie chart). */
+    @GET("api/erp/student/attendance/summary")
+    suspend fun attendanceSummary(
+        @Header("X-Session-Token") token: String,
+        @Query("month") month: String? = null,
+    ): Envelope<AttendanceSummaryReport>
+
+    /** Per-subject totals, optionally scoped to one month. */
+    @GET("api/erp/student/attendance/by-subject")
+    suspend fun attendanceBySubject(
+        @Header("X-Session-Token") token: String,
+        @Query("month") month: String? = null,
+    ): Envelope<SubjectAttendanceReport>
+
+    /** Every attendance view in one call. */
+    @GET("api/erp/student/attendance/complete")
+    suspend fun attendanceComplete(
+        @Header("X-Session-Token") token: String,
+    ): Envelope<AttendanceComplete>
+
+    /** Per-period attendance for one date (null = today). Present / Absent / Not Marked. */
+    @GET("api/erp/student/attendance/daily")
+    suspend fun dailyAttendance(
+        @Header("X-Session-Token") token: String,
+        @Query("date") date: String? = null,
+    ): Envelope<DailyAttendance>
+
+    /** Daily attendance across a range — max 31 days. */
+    @GET("api/erp/student/attendance/daily/history")
+    suspend fun attendanceHistory(
+        @Header("X-Session-Token") token: String,
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+    ): Envelope<AttendanceHistory>
+
     @GET("api/erp/student/assessment")
     suspend fun assessment(@Header("X-Session-Token") token: String): Envelope<Assessment>
 
@@ -176,8 +211,15 @@ data class Period(
     val room: String? = null,
     /** set to "LUNCH" for break columns */
     val type: String? = null,
+    /** "present" | "absent" | null (not marked yet) */
+    val attendance: String? = null,
+    /** ready-to-render label: Present / Absent / Not Marked */
+    val attendanceLabel: String? = null,
 ) {
     val isLunch: Boolean get() = type == "LUNCH"
+    val isPresent: Boolean get() = attendance == "present"
+    val isAbsent: Boolean get() = attendance == "absent"
+    val isNotMarked: Boolean get() = attendanceLabel == "Not Marked"
 }
 
 @Serializable
@@ -272,6 +314,8 @@ data class Dashboard(
     val notices: Panel<List<Notice>>? = null,
     val holidays: Panel<List<Holiday>>? = null,
     val classmates: Panel<List<Classmate>>? = null,
+    /** Per-period attendance for the day the ERP considers "today". */
+    val todayAttendance: Panel<DailyAttendance>? = null,
 )
 
 @Serializable
@@ -279,4 +323,123 @@ data class Panel<T>(
     val ok: Boolean = false,
     val data: T? = null,
     val error: String? = null,
+)
+
+@Serializable
+data class DailyAttendance(
+    val date: String? = null,
+    val weekday: String? = null,
+    val summary: AttendanceSummary = AttendanceSummary(),
+    val periods: List<Period> = emptyList(),
+    val present: List<AttendanceRef> = emptyList(),
+    val absent: List<AttendanceRef> = emptyList(),
+    val notMarked: List<AttendanceRef> = emptyList(),
+)
+
+@Serializable
+data class AttendanceSummary(
+    val marked: Int = 0,
+    val present: Int = 0,
+    val absent: Int = 0,
+    val notMarked: Int = 0,
+    /** rounded to 1 decimal by the API (e.g. 78.3) — null when nothing is marked */
+    val percent: Double? = null,
+)
+
+@Serializable
+data class AttendanceRef(
+    val subject: String? = null,
+    val code: String? = null,
+)
+
+@Serializable
+data class AttendanceHistory(
+    val from: String? = null,
+    val to: String? = null,
+    val daysReturned: Int = 0,
+    val totals: AttendanceSummary = AttendanceSummary(),
+    val bySubject: List<SubjectDailyTotals> = emptyList(),
+    val days: List<DailyAttendance> = emptyList(),
+)
+
+@Serializable
+data class SubjectDailyTotals(
+    val subject: String? = null,
+    val code: String? = null,
+    val present: Int = 0,
+    val absent: Int = 0,
+    val marked: Int = 0,
+    val percent: Double? = null,
+)
+
+// ---------------------------------------------------------------------------
+// Attendance report (cumulative / month / per-subject) — the portal's
+// "Attendance" pie chart and report grid.
+// ---------------------------------------------------------------------------
+
+@Serializable
+data class AttendanceSummaryReport(
+    /** "cumulative" or "month" */
+    val scope: String? = null,
+    val month: Int? = null,
+    val monthName: String? = null,
+    val present: Int = 0,
+    val absent: Int = 0,
+    val total: Int = 0,
+    val percent: Int? = null,
+    val byMonth: List<MonthAttendance> = emptyList(),
+    val monthsWithLectures: List<String> = emptyList(),
+)
+
+@Serializable
+data class MonthAttendance(
+    val month: Int = 0,
+    val monthName: String? = null,
+    val present: Int = 0,
+    val absent: Int = 0,
+    val total: Int = 0,
+    val percent: Int? = null,
+)
+
+@Serializable
+data class SubjectAttendanceRow(
+    val name: String? = null,
+    val code: String? = null,
+    val type: String? = null,
+    val present: Int = 0,
+    val absent: Int = 0,
+    val total: Int = 0,
+    val percent: Int? = null,
+)
+
+@Serializable
+data class SubjectAttendanceReport(
+    val scope: String? = null,
+    val month: Int? = null,
+    val monthName: String? = null,
+    val subjects: List<SubjectAttendanceRow> = emptyList(),
+    val overall: AttendanceTotals = AttendanceTotals(),
+    val byType: AttendanceByType = AttendanceByType(),
+)
+
+@Serializable
+data class AttendanceTotals(
+    val present: Int = 0,
+    val absent: Int = 0,
+    val total: Int = 0,
+    val percent: Int? = null,
+)
+
+@Serializable
+data class AttendanceByType(
+    val theory: List<SubjectAttendanceRow> = emptyList(),
+    val lab: List<SubjectAttendanceRow> = emptyList(),
+)
+
+@Serializable
+data class AttendanceComplete(
+    val cumulative: AttendanceTotals = AttendanceTotals(),
+    val byMonth: List<MonthAttendance> = emptyList(),
+    val monthsWithLectures: List<String> = emptyList(),
+    val bySubject: List<SubjectAttendanceRow> = emptyList(),
 )
