@@ -293,6 +293,47 @@ export function createErpProxy({
   });
 
   /**
+   * Fee portal passthrough: /api/erp/fees/<path> → mips-erp-api /v1/fees/<path>
+   *
+   * eLOGiPay is a separate system with its own token. The proxy stays stateless
+   * here — the client holds the `pay_…` token and the proxy just forwards it, so
+   * BOTH credentials can be passed as X-Session-Token and Authorization:
+   *
+   *   X-Session-Token: <proxy token for the ERP>
+   *   Authorization:   Bearer pay_…       ← only needed for fee routes
+   */
+  router.post('/fees/login', async (req, res, next) => {
+    try {
+      const body = await erpCall('/v1/fees/login', { method: 'POST', body: req.body });
+      res.json(body);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  router.all('/fees/*', async (req, res, next) => {
+    try {
+      const path = req.originalUrl.replace(/^.*\/api\/erp/, '').split('?')[0];
+      const qs = req.originalUrl.split('?')[1];
+      const upstream = '/v1' + path + (qs ? '?' + qs : '');
+      const bearer = req.get('Authorization') || '';
+      const data = await erpCall(upstream, {
+        method: req.method,
+        apiKey: bearer.replace(/^Bearer\s+/i, ''),
+        body: req.method === 'GET' ? undefined : req.body,
+      });
+      res.json(data);
+    } catch (e) {
+      if (e.status === 401) {
+        return res.status(401).json({
+          error: { code: e.code || 'BAD_PAY_TOKEN', message: 'Your fee-portal session ended. Sign in again.' },
+        });
+      }
+      next(e);
+    }
+  });
+
+  /**
    * Generic passthrough: /api/erp/<path> → mips-erp-api /v1/<path>
    * New upstream endpoints work with no code change.
    */
