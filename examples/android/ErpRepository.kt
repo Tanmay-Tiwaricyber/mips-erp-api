@@ -70,6 +70,26 @@ class ErpRepository(
     suspend fun subjects() = safeCall { api.subjects(requireToken()).requireData() }
     suspend fun timetable() = safeCall { api.timetable(requireToken()).requireData() }
     suspend fun attendance() = safeCall { api.attendance(requireToken()).requireData() }
+    /** Cumulative attendance + month breakdown (the portal's pie chart). */
+    suspend fun attendanceSummary(month: String? = null) =
+        safeCall { api.attendanceSummary(requireToken(), month).requireData() }
+
+    /** Per-subject totals, optionally for one month. */
+    suspend fun attendanceBySubject(month: String? = null) =
+        safeCall { api.attendanceBySubject(requireToken(), month).requireData() }
+
+    /** Every attendance view in one call — use for a full attendance screen. */
+    suspend fun attendanceComplete() =
+        safeCall { api.attendanceComplete(requireToken()).requireData() }
+
+    /** Per-period attendance for a date (null = today). Drives the daily card. */
+    suspend fun dailyAttendance(date: String? = null) =
+        safeCall { api.dailyAttendance(requireToken(), date).requireData() }
+
+    /** Daily attendance across a range — the API caps this at 31 days. */
+    suspend fun attendanceHistory(from: String? = null, to: String? = null) =
+        safeCall { api.attendanceHistory(requireToken(), from, to).requireData() }
+
     suspend fun assessment() = safeCall { api.assessment(requireToken()).requireData() }
     suspend fun classmates() = safeCall { api.classmates(requireToken()).requireData() }
     suspend fun documents() = safeCall { api.documents(requireToken()).requireData() }
