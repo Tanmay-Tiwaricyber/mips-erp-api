@@ -17,6 +17,8 @@ import express from 'express';
 import crypto from 'node:crypto';
 
 import { Session, INSTITUTES, ErpError, BASE } from './session.js';
+import { PaySession, PayError } from './elogisol.js';
+import { parseOutstandingReport, parseFeeReceipts } from './parsers.js';
 import { solveCaptcha, ocrAvailable, shutdownOcr } from './captcha.js';
 import {
   parseSubjects,
@@ -878,6 +880,197 @@ app.get('/v1/account/login-history', authed(async (req, session) => {
   return parseLoginHistory(d?.field_P || '');
 }));
 
+// ===========================================================================
+// eLOGiPay — the FEE portal (a different system from the ERP above)
+//
+//   https://www.elogisol.com/mpgi/
+//
+// Its captcha is plain text in the login HTML, so login is one GET + one POST
+// with no OCR and no retries. Tokens use the `pay_` prefix and live in the same
+// in-memory registry as the ERP keys, so one Authorization header convention
+// works for both — but a token only ever unlocks the system it came from.
+// ===========================================================================
+
+/** Sessions issued by the fee portal, keyed by `pay_…` token. */
+const paySessions = new Map();
+
+function resolvePaySession(req) {
+  const auth = req.headers.authorization || '';
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null;
+  if (!bearer) {
+    throw new PayError('Missing Authorization header. Call POST /v1/fees/login first.', {
+      status: 401,
+      code: 'NO_TOKEN',
+    });
+  }
+  if (bearer.startsWith('erp_')) {
+    throw new PayError('That is an ERP token. Fee endpoints need a token from POST /v1/fees/login.', {
+      status: 401,
+      code: 'WRONG_SYSTEM',
+    });
+  }
+  const rec = paySessions.get(bearer);
+  if (!rec) {
+    throw new PayError('Invalid or expired fee token. Call POST /v1/fees/login again.', {
+      status: 401,
+      code: 'BAD_PAY_TOKEN',
+    });
+  }
+  rec.session.touch();
+  return { apiKey: bearer, session: rec.session };
+}
+
+const payAuthed = (fn) => async (req, res, next) => {
+  try {
+    const ctx = resolvePaySession(req);
+    const data = await fn(req, ctx.session, ctx);
+    res.json({ ok: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+function evictPaySessions() {
+  const now = Date.now();
+  for (const [k, v] of paySessions) {
+    if (now - v.session.lastUsed > SESSION_TTL_MS) paySessions.delete(k);
+  }
+  while (paySessions.size >= MAX_SESSIONS) {
+    const oldest = [...paySessions.entries()].sort((a, b) => a[1].session.lastUsed - b[1].session.lastUsed)[0];
+    if (!oldest) break;
+    paySessions.delete(oldest[0]);
+  }
+}
+
+/**
+ * Log in to the fee portal.
+ *
+ *   POST /v1/fees/login  { "enrollmentNo": "YOUR_ENROLLMENT_NO", "password": "…" }
+ *   → { ok, data: { apiKey: "pay_…", user, expiresInSeconds } }
+ *
+ * The captcha is read from the page automatically; if the markup ever changes
+ * this answers 502 CAPTCHA_UNAVAILABLE instead of guessing.
+ */
+app.post('/v1/fees/login', async (req, res, next) => {
+  try {
+    const enrollmentNo = String(req.body?.enrollmentNo || req.body?.userId || '').trim();
+    const password = String(req.body?.password || '');
+    if (!enrollmentNo || !password) {
+      throw new PayError('enrollmentNo and password are required', { status: 400, code: 'BAD_REQUEST' });
+    }
+
+    const session = new PaySession();
+    const result = await session.login(enrollmentNo, password);
+    if (!result.ok) {
+      throw new PayError(result.message, {
+        status: 401,
+        code: result.reason,
+        upstream: { wrongLoginAttempts: result.wrongLoginAttempts },
+      });
+    }
+
+    evictPaySessions();
+    const apiKey = `pay_${crypto.randomBytes(24).toString('base64url')}`;
+    paySessions.set(apiKey, { session, createdAt: Date.now() });
+    res.json({
+      ok: true,
+      data: {
+        apiKey,
+        user: session.user,
+        system: 'elogisol',
+        expiresInSeconds: Math.round(SESSION_TTL_MS / 1000),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/v1/fees/logout', payAuthed(async (req, session, ctx) => {
+  paySessions.delete(ctx.apiKey);
+  return { loggedOut: true };
+}));
+
+app.get('/v1/fees/me', payAuthed(async (req, session) => ({
+  user: session.user,
+  system: 'elogisol',
+  authenticated: session.authenticated,
+})));
+
+/** Every invoice line: FEE / DISCOUNT / RECEIPT / REFUND, with running balance. */
+app.get('/v1/fees/invoices', payAuthed(async (req, session) => {
+  const html = await session.outstandingReport();
+  const parsed = parseOutstandingReport(html);
+  const type = req.query.type ? String(req.query.type).toUpperCase() : null;
+  const rows = type ? parsed.rows.filter((r) => String(r.invoiceType || '').toUpperCase() === type) : parsed.rows;
+  return { student: parsed.student, period: parsed.period, count: rows.length, invoices: rows };
+}));
+
+/**
+ * What the student actually wants: how much is due, and why.
+ *
+ *   GET /v1/fees/dues
+ *   → { totals: { charged, receipts, discounts, outstanding }, byHead: [...] }
+ */
+app.get('/v1/fees/dues', payAuthed(async (req, session) => {
+  const html = await session.outstandingReport();
+  const parsed = parseOutstandingReport(html);
+
+  // A fee head is settled when nothing is left on it; surface only the open ones
+  // so a UI can render "pay this" without filtering.
+  const pendingHeads = parsed.byHead.filter((h) => (h.balance || 0) > 0);
+
+  return {
+    student: parsed.student,
+    asOf: parsed.period?.to || null,
+    totals: parsed.totals,
+    byHead: parsed.byHead,
+    pendingHeads,
+    settled: pendingHeads.length === 0,
+  };
+}));
+
+/** Receipts / payment history. */
+app.get('/v1/fees/receipts', payAuthed(async (req, session) => {
+  const html = await session.feeReceiptsPage();
+  const receipts = parseFeeReceipts(html);
+  return {
+    count: receipts.length,
+    receipts,
+    // The portal lists payments in the Outstanding Report as RECEIPT lines, so
+    // fall back to those when the dedicated receipt table is empty (it is for
+    // this account today).
+    note: receipts.length
+      ? undefined
+      : 'The portal shows no rows on its receipt table; RECEIPT lines from /v1/fees/invoices?type=RECEIPT are the payments.',
+  };
+}));
+
+/**
+ * Everything the fee portal shows, in one call.
+ *
+ *   GET /v1/fees/dashboard
+ */
+app.get('/v1/fees/dashboard', payAuthed(async (req, session) => {
+  const html = await session.outstandingReport();
+  const parsed = parseOutstandingReport(html);
+  const payments = parsed.rows.filter((r) => String(r.invoiceType || '').toUpperCase() === 'RECEIPT');
+
+  return {
+    system: 'elogisol',
+    student: parsed.student,
+    asOf: parsed.period?.to || null,
+    dues: {
+      totals: parsed.totals,
+      settled: parsed.totals.outstanding <= 0,
+    },
+    byHead: parsed.byHead,
+    payments,
+    paymentsTotal: payments.reduce((a, r) => a + (r.receiptAmount || 0), 0),
+    invoices: parsed.rows,
+  };
+}));
+
 app.get('/v1/account/leave-balance', authed(async (req, session) =>
   session.ajax('Json/LeaveManagement.asmx/getMyLeaveBalance', {})
 ));
@@ -997,6 +1190,13 @@ const ROUTES = [
   { method: 'GET', path: '/healthz', description: 'Liveness probe' },
   { method: 'GET', path: '/v1/institutes', description: 'Known institute keys + ids' },
   { method: 'GET', path: '/v1/capabilities', description: 'Feature/OCR status + route list' },
+  { method: 'POST', path: '/v1/fees/login', description: 'eLOGiPay fee portal login (plain-text captcha, no OCR)' },
+  { method: 'POST', path: '/v1/fees/logout', description: 'End a fee-portal session' },
+  { method: 'GET', path: '/v1/fees/me', description: 'Who am I (fee portal)' },
+  { method: 'GET', path: '/v1/fees/dashboard', description: 'Fees: dues + every invoice line + payments' },
+  { method: 'GET', path: '/v1/fees/dues', description: 'Outstanding balance, per fee head' },
+  { method: 'GET', path: '/v1/fees/invoices', description: 'Invoice lines (FEE/DISCOUNT/RECEIPT/REFUND), ?type=' },
+  { method: 'GET', path: '/v1/fees/receipts', description: 'Payment receipts' },
   { method: 'POST', path: '/v1/auth/captcha', description: 'Step 1 — start session, return captcha image' },
   { method: 'POST', path: '/v1/auth/login', description: 'Step 2 — login (manual captcha or ?auto=true) → apiKey' },
   { method: 'POST', path: '/v1/auth/logout', description: 'Log out and drop the session' },
