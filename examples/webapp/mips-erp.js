@@ -172,6 +172,27 @@
   MipsErp.prototype.subjects = function () { return this._req('/student/subjects'); };
   MipsErp.prototype.timetable = function () { return this._req('/student/timetable'); };
   MipsErp.prototype.attendance = function () { return this._req('/student/attendance'); };
+  /** Cumulative totals + a month-by-month breakdown (the dashboard pie chart). */
+  MipsErp.prototype.attendanceSummary = function (month) {
+    return this._req('/student/attendance/summary' + (month != null ? '?month=' + encodeURIComponent(month) : ''));
+  };
+  /** Per-subject totals, optionally for one month, split into theory/lab. */
+  MipsErp.prototype.attendanceBySubject = function (month) {
+    return this._req('/student/attendance/by-subject' + (month != null ? '?month=' + encodeURIComponent(month) : ''));
+  };
+  /** Everything attendance-related in one call (cumulative + months + subjects). */
+  MipsErp.prototype.attendanceComplete = function () { return this._req('/student/attendance/complete', { timeout: 45000 }); };
+  /** Per-period attendance for one date (defaults to today): present/absent/not marked. */
+  MipsErp.prototype.todayAttendance = function (date) {
+    return this._req('/student/attendance/daily' + (date ? '?date=' + encodeURIComponent(date) : ''));
+  };
+  /** Daily attendance over a range: { from, to } → days[] + bySubject[] + totals. */
+  MipsErp.prototype.attendanceHistory = function (from, to) {
+    var q = [];
+    if (from) q.push('from=' + encodeURIComponent(from));
+    if (to) q.push('to=' + encodeURIComponent(to));
+    return this._req('/student/attendance/daily/history' + (q.length ? '?' + q.join('&') : ''));
+  };
   MipsErp.prototype.assessment = function () { return this._req('/student/assessment'); };
   MipsErp.prototype.classmates = function () { return this._req('/student/classmates'); };
   MipsErp.prototype.documents = function () { return this._req('/student/documents'); };
