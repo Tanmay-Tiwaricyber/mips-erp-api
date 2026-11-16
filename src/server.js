@@ -29,6 +29,10 @@ import {
   normaliseProfile,
   parseGrid,
   htmlToText,
+  parseAttendanceCounts,
+  parseSubjectIds,
+  parseMonthFilter,
+  MONTH_NAMES,
 } from './parsers.js';
 
 const PORT = Number(process.env.PORT || 3000);
@@ -379,27 +383,42 @@ app.get('/v1/student/timetable', authed(async (req, session) => {
     attendanceDate: asOf,
     withAttendanceStatus: 1,
   });
+  // The grid always covers the whole week; the ERP marks per-period attendance
+  // only on the row matching `asOf`. Both are returned.
   return { asOf, ...parseTimetable(res?.timeTable_ViewString_P) };
 }));
 
 app.get('/v1/student/attendance', authed(async (req, session) => {
-  // The dashboard aggregates attendance per subject through the assessment grid,
-  // and gives a raw present/absent/lectures triple for the chart.
-  const raw = await session.ajax('viewStuAttendance_rpt.aspx/getAttendance', {
-    sid: req.query.sid || '-1',
-    subject: String(req.query.subject || 0),
-    month: String(req.query.month || 0),
-    prg: req.query.prg || '-1',
-    branch: req.query.branch || '-1',
-    ys: req.query.ys || '-1',
-  });
-  const [present, absent, total] = String(raw || '0,0,0').split(',').map((n) => Number(n.trim()) || 0);
-  const summaryHtml = await session.ajax('examResult.aspx/getStu_ExamSummary', { roll: session.user.registrationCode });
+  // Per-subject percentages come from the assessment grid. The real
+  // present/absent/lecture triple has to come from the attendance report, which
+  // needs the student's internal ids — passing -1 (what this route used to do)
+  // silently returns 0,0,0 and left `present`/`absent`/`totalLectures` dead.
+  const ctx = req.query.sid && req.query.sid !== '-1'
+    ? {
+        sid: String(req.query.sid),
+        prg: String(req.query.prg ?? '-1'),
+        branch: String(req.query.branch ?? '-1'),
+        ys: String(req.query.ys ?? '-1'),
+      }
+    : await attendanceContext(session);
+
+  const month = parseMonthFilter(req.query.month);
+  if (month === null) {
+    throw new ErpError(`Unknown month "${req.query.month}"`, { status: 400, code: 'BAD_MONTH' });
+  }
+
+  const [counts, summaryHtml] = await Promise.all([
+    attendanceSlice(session, ctx, req.query.subject || 0, month),
+    session.ajax('examResult.aspx/getStu_ExamSummary', { roll: session.user.registrationCode }),
+  ]);
   const { subjects, totals } = parseAssessment(summaryHtml);
 
-  // The chart triple comes back 0,0,0 for a student-scoped session (the portal's
-  // own chart does the same), so fall back to the aggregate the ERP prints on the
-  // assessment grid footer — e.g. "72 %".
+  const present = counts.present ?? 0;
+  const absent = counts.absent ?? 0;
+  const total = counts.total ?? 0;
+
+  // Fall back to the aggregate the ERP prints on the assessment grid footer
+  // ("72 %") only when the report has nothing for this slice.
   const gridPercent = totals?.attendancePercent ? parseFloat(String(totals.attendancePercent)) : null;
   const rawPercent = total ? +((present / total) * 100).toFixed(2) : null;
 
@@ -410,12 +429,373 @@ app.get('/v1/student/attendance', authed(async (req, session) => {
       absent,
       totalLectures: total,
       source: rawPercent !== null ? 'attendance-report' : Number.isFinite(gridPercent) ? 'assessment-grid' : null,
+      month: month === 0 ? null : month,
     },
     bySubject: subjects.map((s) => {
       const p = parseFloat(s.attendance);
       return { name: s.name, code: s.code, percent: Number.isFinite(p) ? p : null, status: s.attendance };
     }),
     totals,
+  };
+}));
+
+/**
+ * Per-period attendance for one date.
+ *
+ *   GET /v1/student/attendance/daily?date=2026-11-14
+ *
+ * Returns each period of that day with attendance: "present" | "absent" | null
+ * (null = not marked yet). This is the data behind the portal's
+ * "Attendance: Present" / "Attendance Not Marked" labels.
+ */
+/**
+ * One shape for daily attendance, used by the standalone route, the history
+ * range and the /v1/dashboard panel — so a client never has to branch.
+ *
+ * `periods[]` holds real class slots only: empty grid holes are dropped and the
+ * LUNCH marker is skipped, while `period` keeps the original grid position.
+ * `attendance` is "present" | "absent" | null, where null means the teacher
+ * hasn't marked that period yet (the portal renders nothing at all for those).
+ */
+function buildDailyAttendance(parsed, { date, weekday }) {
+  const day = parsed.days.find((d) => d.day === weekday);
+  const periods = (day?.periods || [])
+    .map((p, i) => (p && p.type !== 'LUNCH' ? { period: i + 1, ...p } : null))
+    .filter(Boolean);
+  const ref = (p) => ({ subject: p.subject, code: p.code });
+  return {
+    date,
+    weekday,
+    // which row the ERP actually attached marks to (normally === weekday)
+    markedDay: parsed.markedDay,
+    summary: parsed.attendanceSummary,
+    periods,
+    present: periods.filter((p) => p.attendance === 'present').map(ref),
+    absent: periods.filter((p) => p.attendance === 'absent').map(ref),
+    notMarked: periods.filter((p) => p.attendance === null).map(ref),
+  };
+}
+
+/**
+ * The ids the attendance report needs. The portal reads them off hidden inputs
+ * that are filled by getStuDashboard_Details — `sid` in particular is the
+ * internal student id (e.g. 13349), not the registration code.
+ */
+async function attendanceContext(session) {
+  const raw = await session.ajax('home.aspx/getStuDashboard_Details', {});
+  const det = Array.isArray(raw) ? raw[0] : raw;
+  if (!det || det.StudentId_P === undefined) {
+    throw new ErpError('Could not read student ids from the portal dashboard', {
+      status: 502,
+      code: 'ERP_CALL_FAILED',
+    });
+  }
+  return {
+    sid: String(det.StudentId_P),
+    prg: String(det.prgId_P),
+    branch: String(det.branchId_P),
+    ys: String(det.stuSem_P),
+  };
+}
+
+/** One call to the report webmethod. Returns parsed counts, never raw text. */
+async function attendanceSlice(session, ctx, subject, month) {
+  const raw = await session.ajax('viewStuAttendance_rpt.aspx/getAttendance', {
+    ...ctx,
+    subject: String(subject ?? 0),
+    month: String(month ?? 0),
+  });
+  return parseAttendanceCounts(raw);
+}
+
+/**
+ * Cumulative + month-by-month attendance totals.
+ *
+ * This is the same pie chart the student dashboard draws ("Cumulative
+ * Attendance") and the same numbers the report page's totals row shows.
+ *
+ *   GET /v1/student/attendance/summary
+ *   GET /v1/student/attendance/summary?month=11
+ */
+app.get('/v1/student/attendance/summary', authed(async (req, session) => {
+  const month = parseMonthFilter(req.query.month);
+  if (month === null) {
+    throw new ErpError(
+      `Unknown month "${req.query.month}" — use 1-12, a month name, or "all"`,
+      { status: 400, code: 'BAD_MONTH' }
+    );
+  }
+  const ctx = await attendanceContext(session);
+
+  if (month !== 0) {
+    const slice = await attendanceSlice(session, ctx, 0, month);
+    return {
+      scope: 'month',
+      month,
+      monthName: MONTH_NAMES[month - 1],
+      ...slice,
+    };
+  }
+
+  // cumulative + every month that actually has lectures (1-12 probed in parallel)
+  const monthResults = await Promise.all(
+    MONTH_NAMES.map((name, i) => attendanceSlice(session, ctx, 0, i + 1))
+  );
+  const byMonth = monthResults.map((m, i) => ({
+    month: i + 1,
+    monthName: MONTH_NAMES[i],
+    ...m,
+  }));
+  const cumulative = await attendanceSlice(session, ctx, 0, 0);
+
+  return {
+    scope: 'cumulative',
+    ...cumulative,
+    byMonth,
+    monthsWithLectures: byMonth.filter((m) => m.total > 0).map((m) => m.monthName),
+  };
+}));
+
+/**
+ * Per-subject attendance totals, optionally for a single month.
+ *
+ *   GET /v1/student/attendance/by-subject
+ *   GET /v1/student/attendance/by-subject?month=10
+ *
+ * Subjects with no marked lectures in the window are returned with total 0 and
+ * percent null rather than being silently dropped — the student still has to see
+ * "this lab hasn't been marked yet".
+ */
+app.get('/v1/student/attendance/by-subject', authed(async (req, session) => {
+  const month = parseMonthFilter(req.query.month);
+  if (month === null) {
+    throw new ErpError(
+      `Unknown month "${req.query.month}" — use 1-12, a month name, or "all"`,
+      { status: 400, code: 'BAD_MONTH' }
+    );
+  }
+  const [ctx, subjectsHtml] = await Promise.all([
+    attendanceContext(session),
+    session.ajax('home.aspx/getMySubjects', {}),
+  ]);
+  const idMap = parseSubjectIds(subjectsHtml);
+  const subjects = [...idMap.values()];
+
+  const rows = await Promise.all(
+    subjects.map(async (sub) => {
+      const counts = await attendanceSlice(session, ctx, sub.sd, month);
+      return {
+        name: sub.name,
+        code: sub.code,
+        type: sub.type,
+        ...counts,
+      };
+    })
+  );
+
+  // running total across subjects, so a client can show a footer row
+  const overall = rows.reduce(
+    (acc, r) => ({
+      present: acc.present + (r.present || 0),
+      absent: acc.absent + (r.absent || 0),
+      total: acc.total + (r.total || 0),
+    }),
+    { present: 0, absent: 0, total: 0 }
+  );
+  overall.percent = overall.total ? Math.round((overall.present * 100) / overall.total) : null;
+
+  return {
+    scope: month === 0 ? 'cumulative' : 'month',
+    month,
+    monthName: month === 0 ? null : MONTH_NAMES[month - 1],
+    subjects: rows,
+    overall,
+    // Split theory vs labs. The portal's own "Subject Type" column labels even
+    // lab subjects as "Theory", so classify on the name instead.
+    byType: {
+      lab: rows.filter((r) => /\b(lab|practical|workshop|drawing)\b/i.test(r.name || '')),
+      theory: rows.filter((r) => !/\b(lab|practical|workshop|drawing)\b/i.test(r.name || '')),
+    },
+  };
+}));
+
+/**
+ * Every attendance number the portal can show, in one request.
+ *
+ *   GET /v1/student/attendance/complete
+ *
+ * Combines: the dashboard pie (cumulative), the month breakdown, the per-subject
+ * grid for the current month and cumulatively, and today's per-period marks. All
+ * of it is read-only report data — the ERP has no endpoint that lists individual
+ * dated lecture records for a student, so this is the widest view it exposes.
+ */
+app.get('/v1/student/attendance/complete', authed(async (req, session) => {
+  const [ctx, subjectsHtml] = await Promise.all([
+    attendanceContext(session),
+    session.ajax('home.aspx/getMySubjects', {}),
+  ]);
+  const idMap = parseSubjectIds(subjectsHtml);
+  const subjects = [...idMap.values()];
+
+  const safe = async (fn) => {
+    try {
+      return await fn();
+    } catch (e) {
+      return { error: e.message };
+    }
+  };
+
+  const [cumulative, byMonth, perSubjectCumulative] = await Promise.all([
+    safe(() => attendanceSlice(session, ctx, 0, 0)),
+    safe(() =>
+      Promise.all(MONTH_NAMES.map((name, i) => attendanceSlice(session, ctx, 0, i + 1)))
+        .then((rows) => rows.map((r, i) => ({ month: i + 1, monthName: MONTH_NAMES[i], ...r })))
+    ),
+    safe(() =>
+      Promise.all(
+        subjects.map(async (sub) => ({ name: sub.name, code: sub.code, type: sub.type, ...(await attendanceSlice(session, ctx, sub.sd, 0)) }))
+      )
+    ),
+  ]);
+
+  return {
+    cumulative,
+    byMonth,
+    monthsWithLectures: Array.isArray(byMonth)
+      ? byMonth.filter((m) => m.total > 0).map((m) => m.monthName)
+      : [],
+    bySubject: perSubjectCumulative,
+  };
+}));
+
+app.get('/v1/student/attendance/daily', authed(async (req, session) => {
+  if (!session.serverDateTime) await session.primeDashboard();
+  // No ?date= means "the day the portal considers today" — the ERP runs on IST,
+  // so trust its serverDateTime rather than the container clock.
+  const date = req.query.date
+    ? normaliseDate(req.query.date)
+    : formatErpDate(parseErpDate(session.serverDateTime) || new Date());
+
+  const res = await session.ajax('json/TimeTableWS.asmx/StudentTimeTableWithAttendance', {
+    student: session.user.registrationCode,
+    attendanceDate: date,
+    withAttendanceStatus: 1,
+  });
+
+  const requestedDay = WEEKDAYS[parseErpDate(date).getDay()];
+  const parsed = parseTimetable(res?.timeTable_ViewString_P, requestedDay);
+  return buildDailyAttendance(parsed, { date, weekday: requestedDay });
+}));
+
+/**
+ * Daily attendance history over a date range.
+ *
+ *   GET /v1/student/attendance/daily/history?from=2026-11-08&to=2026-11-14
+ *
+ * The ERP marks attendance one date at a time, so this makes one upstream call
+ * per date (bounded to 31, run with limited concurrency). Dates in the future
+ * and Sundays are skipped. Per-subject totals are aggregated across the range.
+ */
+app.get('/v1/student/attendance/daily/history', authed(async (req, session) => {
+  // `to` defaults to today, `from` defaults to 7 days back (never future dates).
+  const endDate = parseErpDate(req.query.to || req.query.date) || new Date();
+  const startDate = parseErpDate(req.query.from) || new Date(endDate.getTime() - 6 * 86400000);
+  const to = formatErpDate(endDate);
+  const from = formatErpDate(startDate);
+  const start = startDate;
+  const end = endDate;
+  if (!start || !end) throw new ErpError('Invalid from/to date', { status: 400, code: 'BAD_DATE' });
+  if (start > end) throw new ErpError('"from" must be before "to"', { status: 400, code: 'BAD_RANGE' });
+
+  const spanDays = Math.round((end - start) / 86400000) + 1;
+  if (spanDays > 31) {
+    throw new ErpError('Range too large — max 31 days per request', { status: 400, code: 'RANGE_TOO_LARGE' });
+  }
+  if (!session.serverDateTime) await session.primeDashboard();
+
+  const dates = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const day = d.getDay();
+    if (day === 0) continue; // Sunday — no classes
+    dates.push(formatErpDate(d));
+  }
+
+  const days = [];
+  const perSubject = new Map();
+  const CONCURRENCY = 3;
+
+  for (let i = 0; i < dates.length; i += CONCURRENCY) {
+    const batch = dates.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(async (date) => {
+        try {
+          const res = await session.ajax('json/TimeTableWS.asmx/StudentTimeTableWithAttendance', {
+            student: session.user.registrationCode,
+            attendanceDate: date,
+            withAttendanceStatus: 1,
+          });
+          const requestedDay = WEEKDAYS[parseErpDate(date).getDay()];
+          const parsed = parseTimetable(res?.timeTable_ViewString_P, requestedDay);
+          const day = parsed.days.find((d) => d.day === requestedDay);
+          const periods = (day?.periods || []).filter((p) => p && p.type !== 'LUNCH');
+          return { date, weekday: requestedDay, periods, summary: parsed.attendanceSummary };
+        } catch (e) {
+          return { date, error: e.message };
+        }
+      })
+    );
+    for (const r of results) {
+      if (r.error) {
+        days.push({ date: r.date, error: r.error });
+        continue;
+      }
+      days.push({
+        date: r.date,
+        weekday: r.weekday,
+        summary: r.summary,
+        periods: r.periods.map((p) => ({
+          subject: p.subject, code: p.code, teacher: p.teacher,
+          kind: p.kind, attendance: p.attendance, attendanceLabel: p.attendanceLabel,
+        })),
+      });
+      days[days.length - 1].present = r.periods.filter((p) => p.attendance === 'present').map((p) => ({ subject: p.subject, code: p.code }));
+      days[days.length - 1].absent = r.periods.filter((p) => p.attendance === 'absent').map((p) => ({ subject: p.subject, code: p.code }));
+      days[days.length - 1].notMarked = r.periods.filter((p) => p.attendance === null).map((p) => ({ subject: p.subject, code: p.code }));
+      for (const p of r.periods) {
+        if (!p.attendance) continue;
+        const key = p.code || p.subject;
+        const agg = perSubject.get(key) || { subject: p.subject, code: p.code, present: 0, absent: 0 };
+        if (p.attendance === 'present') agg.present += 1;
+        else if (p.attendance === 'absent') agg.absent += 1;
+        perSubject.set(key, agg);
+      }
+    }
+  }
+
+  const totals = { present: 0, absent: 0 };
+  for (const a of perSubject.values()) {
+    totals.present += a.present;
+    totals.absent += a.absent;
+  }
+  const marked = totals.present + totals.absent;
+
+  return {
+    from,
+    to,
+    daysReturned: days.length,
+    totals: {
+      ...totals,
+      marked,
+      percent: marked ? +((totals.present / marked) * 100).toFixed(1) : null,
+    },
+    bySubject: [...perSubject.values()]
+      .map((a) => ({
+        ...a,
+        marked: a.present + a.absent,
+        percent: a.present + a.absent ? +((a.present / (a.present + a.absent)) * 100).toFixed(1) : null,
+      }))
+      .sort((x, y) => x.subject.localeCompare(y.subject)),
+    days,
   };
 }));
 
@@ -515,7 +895,8 @@ app.get('/v1/dashboard', authed(async (req, session) => {
       return { ok: false, error: e.message };
     }
   };
-  const [profile, subjects, assessment, notices, holidays, classmates, documents, history] = await Promise.all([
+  const today = req.query.date || null;
+  const [profile, subjects, assessment, notices, holidays, classmates, documents, history, todayAttendance] = await Promise.all([
     safe(async () => normaliseProfile((await session.ajax('home.aspx/getStuDashboard_Details', {}))[0])),
     safe(async () => parseSubjects(await session.ajax('home.aspx/getMySubjects', {}))),
     safe(async () => parseAssessment(await session.ajax('examResult.aspx/getStu_ExamSummary', { roll: session.user.registrationCode }))),
@@ -534,8 +915,19 @@ app.get('/v1/dashboard', authed(async (req, session) => {
       return (l || []).map((d) => ({ title: d.Title, url: d.ReferenceLink }));
     }),
     safe(async () => parseLoginHistory((await session.ajax('Home.aspx/getLog_History', {}))?.field_P || '')),
+    safe(async () => {
+      const date = normaliseDate(today || formatErpDate(parseErpDate(session.serverDateTime) || new Date()));
+      const weekday = WEEKDAYS[parseErpDate(date).getDay()];
+      const res = await session.ajax('json/TimeTableWS.asmx/StudentTimeTableWithAttendance', {
+        student: session.user.registrationCode,
+        attendanceDate: date,
+        withAttendanceStatus: 1,
+      });
+      const parsed = parseTimetable(res?.timeTable_ViewString_P, weekday);
+      return buildDailyAttendance(parsed, { date, weekday });
+    }),
   ]);
-  return { profile, subjects, assessment, notices, holidays, classmates, documents, loginHistory: history };
+  return { profile, subjects, assessment, notices, holidays, classmates, documents, loginHistory: history, todayAttendance };
 }));
 
 /** Escape hatch: call any upstream ASP.NET webmethod yourself. */
@@ -568,6 +960,39 @@ app.use((err, req, res, _next) => {
   });
 });
 
+// ---------------------------------------------------------------- date helpers
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Accepts 2026-11-14, 14-Nov-2026, 14/11/2026 or a Date; returns "DD-Mon-YYYY". */
+function normaliseDate(input) {
+  const d = parseErpDate(input);
+  if (!d) throw new ErpError(`Invalid date "${input}" — use YYYY-MM-DD or DD-Mon-YYYY`, { status: 400, code: 'BAD_DATE' });
+  return formatErpDate(d);
+}
+
+function parseErpDate(input) {
+  if (!input) return null;
+  if (input instanceof Date) return Number.isNaN(input.getTime()) ? null : input;
+  const s = String(input).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); // 2026-11-14
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  m = s.match(/^(\d{1,2})[-/ ]([A-Za-z]{3})[a-z]*[-/ ](\d{4})/); // 14-Nov-2026
+  if (m) {
+    const mi = MONTHS.findIndex((x) => x.toLowerCase() === m[2].toLowerCase());
+    if (mi >= 0) return new Date(Number(m[3]), mi, Number(m[1]));
+  }
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/); // 14/11/2026
+  if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function formatErpDate(d) {
+  return `${String(d.getDate()).padStart(2, '0')}-${MONTHS[d.getMonth()]}-${d.getFullYear()}`;
+}
+
 const ROUTES = [
   { method: 'GET', path: '/healthz', description: 'Liveness probe' },
   { method: 'GET', path: '/v1/institutes', description: 'Known institute keys + ids' },
@@ -581,6 +1006,11 @@ const ROUTES = [
   { method: 'GET', path: '/v1/student/subjects', description: 'Registered subjects + syllabus links' },
   { method: 'GET', path: '/v1/student/timetable', description: 'Weekly timetable w/ teachers' },
   { method: 'GET', path: '/v1/student/attendance', description: 'Attendance overall + per subject' },
+  { method: 'GET', path: '/v1/student/attendance/summary', description: 'Cumulative attendance + month-by-month breakdown' },
+  { method: 'GET', path: '/v1/student/attendance/by-subject', description: 'Per-subject totals, optional month, theory vs lab' },
+  { method: 'GET', path: '/v1/student/attendance/complete', description: 'Every attendance view in one call' },
+  { method: 'GET', path: '/v1/student/attendance/daily', description: 'Per-period attendance for one date (present/absent/not marked)' },
+  { method: 'GET', path: '/v1/student/attendance/daily/history', description: 'Daily attendance over a date range + per-subject totals' },
   { method: 'GET', path: '/v1/student/assessment', description: 'Mid-sem / unit test / assignment marks' },
   { method: 'GET', path: '/v1/student/classmates', description: 'Class list' },
   { method: 'GET', path: '/v1/student/documents', description: 'Important document links' },
