@@ -47,9 +47,12 @@ node examples/smoke.mjs                  # 24 checks — every endpoint + auth g
 node examples/test-attendance-report.mjs # 27 checks — cumulative/month/subject attendance
 node examples/test-daily.mjs             # 15 checks — daily attendance, all three states
 node examples/test-peruser.mjs           # 12 checks — per-user token isolation
+
+# the fee portal is a separate system with its own login
+FEES_USER=YOUR_ENROLLMENT_NO FEES_PASS='…' node examples/test-fees.mjs   # 30 checks — dues, invoices, receipts
 ```
 
-All four pass today. `test-daily.mjs` also accepts `DATE=2026-11-14` to pin the day
+All five suites pass today. `test-daily.mjs` also accepts `DATE=2026-11-14` to pin the day
 under test, and `capture-demo.mjs` re-records `examples/webapp/demo-data.json` from a
 live session (so the demo UI never drifts from the real API).
 
@@ -92,6 +95,71 @@ live session (so the demo UI never drifts from the real API).
 | `POST` | `/v1/raw` | **escape hatch** — call any upstream `page.aspx/Method` |
 
 `openapi.json` contains the full machine-readable spec (point Swagger UI / Postman at it).
+
+## Two portals, one API
+
+This service fronts **two unrelated college systems**. They share the API surface
+and the `Authorization: Bearer` convention, but nothing else — a token from one is
+rejected by the other (`401 WRONG_SYSTEM` on a prefix mismatch).
+
+| | ERP | eLOGiPay |
+|---|---|---|
+| host | `erp.mpgi.net` | `www.elogisol.com/mpgi/` |
+| what | attendance, timetable, marks, notices | **fees, dues, receipts, payments** |
+| login | `POST /v1/auth/login` → `erp_…` | `POST /v1/fees/login` → `pay_…` |
+| captcha | image, ~33%/attempt, needs 15 OCR retries | **plain text in the HTML** — no OCR at all |
+| endpoints | `/v1/student/*`, `/v1/calendar/*` | `/v1/fees/*` |
+
+### Fee portal (eLOGiPay)
+
+The captcha on this system is not an image. The login page renders it as
+`<span id="TxtCaptcha">3336</span>`, so login is a single GET plus a single POST
+with one attempt. If that markup ever changes the API answers `502
+CAPTCHA_UNAVAILABLE` rather than guessing.
+
+```bash
+# 1. log in with the enrollment number (not the ERP registration code)
+curl -X POST localhost:3000/v1/fees/login \
+  -H 'Content-Type: application/json' \
+  -d '{"enrollmentNo":"YOUR_ENROLLMENT_NO","password":"…"}'
+# → { "ok":true, "data":{ "apiKey":"pay_…", "user":{ "enrollmentNo":"…", "name":"TANMAY TIWARI (AI&ML)" } } }
+
+# 2. everything in one call
+curl localhost:3000/v1/fees/dashboard -H 'Authorization: Bearer pay_…'
+```
+
+| endpoint | returns |
+|---|---|
+| `POST /v1/fees/login` | `pay_…` token + student name/enrollment |
+| `GET /v1/fees/dashboard` | dues totals, per-head split, every invoice line, payments |
+| `GET /v1/fees/dues` | `totals`, `byHead[]`, `pendingHeads[]`, `settled` |
+| `GET /v1/fees/invoices` | every line — `?type=FEE\|DISCOUNT\|RECEIPT\|REFUND` |
+| `GET /v1/fees/receipts` | payment receipts |
+| `GET /v1/fees/me` · `POST /v1/fees/logout` | session |
+
+A live answer from this account:
+
+```json
+{ "totals": { "invoiceCount": 14, "charged": 713300, "receipts": 67500,
+              "discounts": 580000, "outstanding": 65800 },
+  "byHead": [ { "head": "INSTALLMENT-1", "charged": 142500, "receipts": 22500,
+                "discounts": 120000, "balance": 65800 }, … ],
+  "settled": false }
+```
+
+Money semantics worth knowing:
+
+- **`invoiceType` is the sign of the line.** `FEE` is a charge, `RECEIPT` is a
+  payment, `DISCOUNT` is a waiver, `REFUND` is money back. `balance` on each row
+  is the *running* balance after that line, which is why it jumps around.
+- **`outstanding` comes from the portal's own `hdnbalance`**, not from adding up
+  the rows — the row balances are cumulative snapshots and can't be summed.
+- **The fee receipt table is empty** for this account even though ₹67,500 has
+  been paid. The real payment history is the `RECEIPT` lines; use
+  `/v1/fees/invoices?type=RECEIPT`.
+- **What this portal does not have:** no attendance, no timetable, no marks. It
+  is the fee system only. Attendance lives on the ERP above — don't look for it
+  here.
 
 ### Attendance — every view the portal has
 
