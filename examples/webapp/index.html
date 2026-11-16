@@ -64,6 +64,24 @@ th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute
   </div>
 
   <!-- ============================ LOGIN ============================ -->
+  <!-- ======================= FEE PORTAL (separate system) ======================= -->
+  <div class="card" id="feesCard">
+    <h2><span class="dot"></span>Fee account <span class="muted" style="font-weight:400" id="feesMeta">eLOGiPay · separate system</span></h2>
+    <div id="feesBody">
+      <div class="muted" style="font-size:13px;margin-bottom:10px">
+        The fee portal is a different system with its own login. Sign in with your
+        <b>enrollment number</b> (not the ERP registration code).
+      </div>
+      <div class="row">
+        <input id="feeUser" placeholder="Enrollment no." autocomplete="username" />
+        <input id="feePass" type="password" placeholder="Password" autocomplete="current-password" />
+        <button id="btnFee" class="primary">Load fees</button>
+      </div>
+      <div id="feeMsg" class="msg"></div>
+    </div>
+    <div id="feeData"></div>
+  </div>
+
   <div id="loginCard" class="card">
     <h2><span class="dot"></span>Sign in</h2>
     <div id="loginMsg" class="msg"></div>
@@ -110,6 +128,7 @@ th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute
 
     <div id="appMsg" class="msg"></div>
     <div class="tiles" id="tiles"></div>
+
     <div class="card"><h2><span class="dot"></span>Student</h2><div class="grid2" id="profile"></div></div>
 
     <div class="card">
@@ -370,6 +389,64 @@ async function loadDemo() {
   }
 }
 
+/* ------------------------------------------------------- fee portal (eLOGiPay) */
+function renderFees(f) {
+  var t = (f.dues && f.dues.totals) || {};
+  var money = function (n) { return '₹' + Number(n || 0).toLocaleString('en-IN'); };
+  var heads = f.byHead || [];
+  var pays = f.payments || [];
+
+  $('feesMeta').textContent = 'eLOGiPay · ' + (f.student && f.student.enrollmentNo || '') +
+    (f.asOf ? ' · as of ' + f.asOf : '');
+
+  var paidPct = t.charged ? Math.min(100, Math.round((t.receipts / t.charged) * 100)) : 0;
+
+  $('feeData').innerHTML =
+    '<div class="tiles" style="margin-top:12px">' +
+      '<div class="tile"><div class="k">Outstanding</div><div class="v" style="color:' +
+        (t.outstanding > 0 ? '#dc2626' : '#16a34a') + '">' + money(t.outstanding) + '</div>' +
+        '<div class="muted" style="font-size:11px">' + (f.dues && f.dues.settled ? 'settled' : 'due now') + '</div></div>' +
+      '<div class="tile"><div class="k">Charged</div><div class="v">' + money(t.charged) + '</div></div>' +
+      '<div class="tile"><div class="k">Paid</div><div class="v" style="color:#16a34a">' + money(t.receipts) + '</div>' +
+        '<div class="bar"><i style="width:' + paidPct + '%;background:#16a34a"></i></div></div>' +
+      '<div class="tile"><div class="k">Waived</div><div class="v" style="color:#0891b2">' + money(t.discounts) + '</div></div>' +
+    '</div>' +
+    (heads.length
+      ? '<div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>Fee head</th><th>Charged</th>' +
+        '<th>Paid</th><th>Waived</th><th style="text-align:right">Balance</th></tr></thead><tbody>' +
+        heads.map(function (h) {
+          return '<tr><td>' + esc(h.head) + '</td><td>' + money(h.charged) + '</td><td>' + money(h.receipts) +
+            '</td><td class="muted">' + money(h.discounts) + '</td>' +
+            '<td style="text-align:right"><span class="chip ' + (h.balance > 0 ? 'b' : 'g') + '">' +
+            money(h.balance) + '</span></td></tr>';
+        }).join('') + '</tbody></table></div>'
+      : '') +
+    (pays.length
+      ? '<div style="margin-top:14px"><div class="muted" style="font-size:12px;margin-bottom:6px">' +
+        'Payments (' + pays.length + ')</div><table><thead><tr><th>Fee head</th><th>Date</th>' +
+        '<th style="text-align:right">Amount</th></tr></thead><tbody>' +
+        pays.map(function (p) {
+          return '<tr><td>' + esc(p.invoiceHead) + '</td><td class="muted">' + esc(p.invoiceDate) +
+            '</td><td style="text-align:right">' + money(p.receiptAmount) + '</td></tr>';
+        }).join('') + '</tbody></table></div>'
+      : '');
+}
+
+async function loadFees() {
+  var u = ($('feeUser').value || '').trim();
+  var p = $('feePass').value;
+  if (!u || !p) { msg('feeMsg', 'Enter the enrollment number and password.', 'err'); return; }
+  msg('feeMsg', 'Signing in to the fee portal…', 'info');
+  try {
+    await client.feeLogin(u, p);
+    msg('feeMsg', '', '');
+    var f = await client.feeDashboard();
+    renderFees(f);
+  } catch (e) {
+    msg('feeMsg', e.message || 'Could not load fees.', 'err');
+  }
+}
+
 /* ------------------------------------------------------------ wiring */
 $('btnLogin').onclick = doLogin;
 $('password').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
@@ -377,6 +454,8 @@ $('userId').addEventListener('keydown', function (e) { if (e.key === 'Enter') $(
 $('btnCaptcha').onclick = startCaptcha;
 $('btnCaptchaSubmit').onclick = submitCaptcha;
 $('btnDemo').onclick = function (e) { e.preventDefault(); loadDemo(); };
+$('btnFee').onclick = function (e) { e.preventDefault(); loadFees(); };
+$('feePass').addEventListener('keydown', function (e) { if (e.key === 'Enter') loadFees(); });
 $('btnLogout').onclick = async function () {
   await client.logout();
   client.token = null;
@@ -387,5 +466,5 @@ $('btnLogout').onclick = async function () {
   msg('loginMsg', 'You have been signed out.', 'ok');
 };
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5b791e16efb59dc',t:'MTc5NDg0MzM3MQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5b791e16efb59dc',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5b7f84e9e0c5988',t:'MTc5NDg0NzU2Nw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5b7f84e9e0c5988',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
