@@ -23,6 +23,10 @@
     {
       "name": "meta",
       "description": "Discovery"
+    },
+    {
+      "name": "fees",
+      "description": "eLOGiPay fee portal (www.elogisol.com) - separate from the ERP"
     }
   ],
   "components": {
@@ -667,6 +671,195 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SubjectAttendanceRow"
+            }
+          }
+        }
+      },
+      "FeeLoginResult": {
+        "type": "object",
+        "properties": {
+          "apiKey": {
+            "type": "string",
+            "example": "pay_..."
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "enrollmentNo": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "system": {
+            "type": "string",
+            "example": "elogisol"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "example": 1500
+          }
+        }
+      },
+      "FeeInvoiceLine": {
+        "type": "object",
+        "properties": {
+          "serial": {
+            "type": "integer"
+          },
+          "enrollmentNo": {
+            "type": "string"
+          },
+          "studentName": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "course": {
+            "type": "string"
+          },
+          "session": {
+            "type": "string"
+          },
+          "invoiceHead": {
+            "type": "string",
+            "example": "INSTALLMENT-1"
+          },
+          "invoiceType": {
+            "type": "string",
+            "enum": [
+              "FEE",
+              "DISCOUNT",
+              "RECEIPT",
+              "REFUND"
+            ]
+          },
+          "invoiceDate": {
+            "type": "string",
+            "example": "26/06/2026"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "refundAmount": {
+            "type": "integer"
+          },
+          "advanceAmount": {
+            "type": "integer"
+          },
+          "receiptAmount": {
+            "type": "integer"
+          },
+          "discount": {
+            "type": "integer"
+          },
+          "balance": {
+            "type": "integer",
+            "description": "running balance after this line"
+          },
+          "institute": {
+            "type": "string"
+          }
+        }
+      },
+      "FeeTotals": {
+        "type": "object",
+        "properties": {
+          "invoiceCount": {
+            "type": "integer"
+          },
+          "charged": {
+            "type": "integer",
+            "description": "sum of FEE lines"
+          },
+          "receipts": {
+            "type": "integer",
+            "description": "sum of RECEIPT lines"
+          },
+          "discounts": {
+            "type": "integer",
+            "description": "sum of DISCOUNT lines"
+          },
+          "refunds": {
+            "type": "integer"
+          },
+          "advances": {
+            "type": "integer"
+          },
+          "outstanding": {
+            "type": "integer",
+            "description": "what is still owed - the portal own hdnbalance"
+          }
+        }
+      },
+      "FeeHead": {
+        "type": "object",
+        "properties": {
+          "head": {
+            "type": "string"
+          },
+          "charged": {
+            "type": "integer"
+          },
+          "receipts": {
+            "type": "integer"
+          },
+          "discounts": {
+            "type": "integer"
+          },
+          "refunds": {
+            "type": "integer"
+          },
+          "balance": {
+            "type": "integer"
+          }
+        }
+      },
+      "FeeDashboard": {
+        "type": "object",
+        "properties": {
+          "system": {
+            "type": "string"
+          },
+          "student": {
+            "type": "object"
+          },
+          "asOf": {
+            "type": "string"
+          },
+          "dues": {
+            "type": "object",
+            "properties": {
+              "totals": {
+                "$ref": "#/components/schemas/FeeTotals"
+              },
+              "settled": {
+                "type": "boolean"
+              }
+            }
+          },
+          "byHead": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeHead"
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeInvoiceLine"
+            }
+          },
+          "paymentsTotal": {
+            "type": "integer"
+          },
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeeInvoiceLine"
             }
           }
         }
@@ -1620,6 +1813,223 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/fees/login": {
+      "post": {
+        "tags": [
+          "fees"
+        ],
+        "summary": "Log in to the eLOGiPay fee portal",
+        "description": "A separate system from the ERP (erp.mpgi.net). The eLOGiPay captcha is rendered as plain text in the login page, so there is no OCR step and no retry loop - one GET plus one POST. Returns a pay_... token that only works on /v1/fees/* routes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enrollmentNo",
+                  "password"
+                ],
+                "properties": {
+                  "enrollmentNo": {
+                    "type": "string",
+                    "example": "YOUR_ENROLLMENT_NO"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "apiKey + user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/FeeLoginResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BAD_REQUEST"
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS / INVALID_CAPTCHA"
+          },
+          "502": {
+            "description": "CAPTCHA_UNAVAILABLE - the portal markup changed"
+          }
+        }
+      }
+    },
+    "/v1/fees/logout": {
+      "post": {
+        "tags": [
+          "fees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "End a fee-portal session",
+        "responses": {
+          "200": {
+            "description": "loggedOut:true"
+          },
+          "401": {
+            "description": "BAD_PAY_TOKEN"
+          }
+        }
+      }
+    },
+    "/v1/fees/me": {
+      "get": {
+        "tags": [
+          "fees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Who am I (fee portal)",
+        "responses": {
+          "200": {
+            "description": "user + system"
+          },
+          "401": {
+            "description": "NO_TOKEN / BAD_PAY_TOKEN / WRONG_SYSTEM"
+          }
+        }
+      }
+    },
+    "/v1/fees/dashboard": {
+      "get": {
+        "tags": [
+          "fees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Everything the fee portal shows, in one call",
+        "description": "Student identity, dues totals, per-head breakdown, every invoice line and the payment lines.",
+        "responses": {
+          "200": {
+            "description": "system, student, asOf, dues, byHead, payments, invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeeDashboard"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "NO_TOKEN / BAD_PAY_TOKEN"
+          },
+          "502": {
+            "description": "REPORT_UNAVAILABLE"
+          }
+        }
+      }
+    },
+    "/v1/fees/dues": {
+      "get": {
+        "tags": [
+          "fees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Outstanding balance, per fee head",
+        "responses": {
+          "200": {
+            "description": "totals + byHead + pendingHeads + settled"
+          },
+          "401": {
+            "description": "NO_TOKEN / BAD_PAY_TOKEN"
+          }
+        }
+      }
+    },
+    "/v1/fees/invoices": {
+      "get": {
+        "tags": [
+          "fees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Invoice lines (FEE / DISCOUNT / RECEIPT / REFUND)",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "filter to one line type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FEE",
+                "DISCOUNT",
+                "RECEIPT",
+                "REFUND"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "student, period, count, invoices[]"
+          },
+          "401": {
+            "description": "NO_TOKEN / BAD_PAY_TOKEN"
+          }
+        }
+      }
+    },
+    "/v1/fees/receipts": {
+      "get": {
+        "tags": [
+          "fees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Payment receipts",
+        "description": "The portal's dedicated receipt table is empty for some accounts; in that case note explains that RECEIPT lines from /v1/fees/invoices?type=RECEIPT are the payments.",
+        "responses": {
+          "200": {
+            "description": "count + receipts[] (+ optional note)"
+          },
+          "401": {
+            "description": "NO_TOKEN / BAD_PAY_TOKEN"
           }
         }
       }
