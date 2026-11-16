@@ -443,3 +443,156 @@ data class AttendanceComplete(
     val monthsWithLectures: List<String> = emptyList(),
     val bySubject: List<SubjectAttendanceRow> = emptyList(),
 )
+
+// ---------------------------------------------------------------------------
+// eLOGiPay fee portal — a SEPARATE system from the ERP above.
+//
+// Log in through POST /v1/fees/login to get a `pay_...` token; it is rejected by
+// the /v1/student/* endpoints, and an `erp_...` token is rejected here.
+// ---------------------------------------------------------------------------
+
+interface FeeApi {
+    @POST("v1/fees/login")
+    suspend fun login(@Body body: FeeLoginRequest): Envelope<FeeLoginResult>
+
+    @GET("v1/fees/dashboard")
+    suspend fun dashboard(@Header("Authorization") bearer: String): Envelope<FeeDashboard>
+
+    @GET("v1/fees/dues")
+    suspend fun dues(@Header("Authorization") bearer: String): Envelope<FeeDues>
+
+    @GET("v1/fees/invoices")
+    suspend fun invoices(
+        @Header("Authorization") bearer: String,
+        @Query("type") type: String? = null,
+    ): Envelope<FeeInvoicePage>
+
+    @GET("v1/fees/receipts")
+    suspend fun receipts(@Header("Authorization") bearer: String): Envelope<FeeReceiptPage>
+
+    @POST("v1/fees/logout")
+    suspend fun logout(@Header("Authorization") bearer: String): Envelope<FeeLoggedOut>
+}
+
+@Serializable
+data class FeeLoginRequest(val enrollmentNo: String, val password: String)
+
+@Serializable
+data class FeeLoginResult(
+    val apiKey: String,
+    val user: FeeUser? = null,
+    val system: String? = null,
+    val expiresInSeconds: Int = 0,
+) {
+    /** Ready for the Authorization header. */
+    val bearer: String get() = "Bearer $apiKey"
+}
+
+@Serializable
+data class FeeUser(val enrollmentNo: String? = null, val name: String? = null)
+
+@Serializable
+data class FeeInvoiceLine(
+    val serial: Int = 0,
+    val enrollmentNo: String? = null,
+    val studentName: String? = null,
+    val branch: String? = null,
+    val course: String? = null,
+    val session: String? = null,
+    val invoiceHead: String? = null,
+    /** FEE (charge) | DISCOUNT (waiver) | RECEIPT (payment) | REFUND */
+    val invoiceType: String? = null,
+    val invoiceDate: String? = null,
+    val amount: Long = 0,
+    val refundAmount: Long = 0,
+    val advanceAmount: Long = 0,
+    val receiptAmount: Long = 0,
+    val discount: Long = 0,
+    /** running balance after this line — do not sum these */
+    val balance: Long = 0,
+    val institute: String? = null,
+) {
+    val isCharge: Boolean get() = invoiceType == "FEE"
+    val isPayment: Boolean get() = invoiceType == "RECEIPT"
+}
+
+@Serializable
+data class FeeTotals(
+    val invoiceCount: Int = 0,
+    val charged: Long = 0,
+    val receipts: Long = 0,
+    val discounts: Long = 0,
+    val refunds: Long = 0,
+    val advances: Long = 0,
+    /** what is still owed */
+    val outstanding: Long = 0,
+)
+
+@Serializable
+data class FeeHead(
+    val head: String? = null,
+    val charged: Long = 0,
+    val receipts: Long = 0,
+    val discounts: Long = 0,
+    val refunds: Long = 0,
+    val balance: Long = 0,
+)
+
+@Serializable
+data class FeeDues(
+    val student: StudentIdentity? = null,
+    val asOf: String? = null,
+    val totals: FeeTotals = FeeTotals(),
+    val byHead: List<FeeHead> = emptyList(),
+    val pendingHeads: List<FeeHead> = emptyList(),
+    val settled: Boolean = false,
+)
+
+@Serializable
+data class StudentIdentity(
+    val enrollmentNo: String? = null,
+    val name: String? = null,
+    val branch: String? = null,
+    val course: String? = null,
+    val session: String? = null,
+    val institute: String? = null,
+)
+
+@Serializable
+data class FeeInvoicePage(
+    val student: StudentIdentity? = null,
+    val count: Int = 0,
+    val invoices: List<FeeInvoiceLine> = emptyList(),
+)
+
+@Serializable
+data class FeeReceiptPage(
+    val count: Int = 0,
+    val receipts: List<FeeReceipt> = emptyList(),
+    val note: String? = null,
+)
+
+@Serializable
+data class FeeReceipt(
+    val receiptNo: String? = null,
+    val receiptDate: String? = null,
+    val instrumentNo: String? = null,
+    val instrumentDate: String? = null,
+    val payMode: String? = null,
+    val amount: Long = 0,
+)
+
+@Serializable
+data class FeeDashboard(
+    val system: String? = null,
+    val student: StudentIdentity? = null,
+    val asOf: String? = null,
+    val dues: FeeDues? = null,
+    val byHead: List<FeeHead> = emptyList(),
+    val payments: List<FeeInvoiceLine> = emptyList(),
+    val paymentsTotal: Long = 0,
+    val invoices: List<FeeInvoiceLine> = emptyList(),
+)
+
+@Serializable
+data class FeeLoggedOut(val loggedOut: Boolean = true)
